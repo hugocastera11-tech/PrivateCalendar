@@ -380,6 +380,9 @@ fun CalendarScreen(
                         Text("Private Calendar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Light) 
                     },
                     actions = {
+                        IconButton(onClick = onNavigateToTasks) {
+                            Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, "Tareas", tint = MaterialTheme.colorScheme.primary)
+                        }
                         IconButton(onClick = { isSearchActive = true }) {
                             Icon(Icons.Default.Search, "Search", tint = MaterialTheme.colorScheme.primary)
                         }
@@ -389,35 +392,6 @@ fun CalendarScreen(
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
                 )
-            }
-        },
-        bottomBar = {
-            if (!isSearchActive) {
-                BottomAppBar(
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    tonalElevation = 0.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = onNavigateToTasks,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Tareas rápidas")
-                        }
-                    }
-                }
             }
         },
         floatingActionButton = {
