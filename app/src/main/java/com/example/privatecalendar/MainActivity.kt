@@ -54,6 +54,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.work.*
 import com.example.privatecalendar.data.*
+import com.example.privatecalendar.ui.tasks.QuickTasksSection
+import com.example.privatecalendar.ui.tasks.TaskTrashDialog
 import com.example.privatecalendar.ui.theme.PrivateCalendarTheme
 import com.example.privatecalendar.widget.CalendarWidget
 import com.example.privatecalendar.worker.NotificationWorker
@@ -98,6 +100,7 @@ class MainActivity : AppCompatActivity() {
             val navController = rememberNavController()
             val db = remember { AppDatabase.getDatabase(context) }
             val eventDao = db.eventDao()
+            val taskDao = db.quickTaskDao()
             val scope = rememberCoroutineScope()
 
             var isAuthenticated by remember { mutableStateOf(false) }
@@ -150,6 +153,7 @@ class MainActivity : AppCompatActivity() {
                                 CalendarScreen(
                                     onNavigateToSettings = { navController.navigate("settings") },
                                     eventDao = eventDao,
+                                    taskDao = taskDao,
                                     leadTime = leadTime,
                                     showHolidays = showHolidays,
                                     holidayCountryCode = holidayCountryCode
@@ -267,6 +271,7 @@ enum class CalendarViewMode {
 fun CalendarScreen(
     onNavigateToSettings: () -> Unit,
     eventDao: EventDao,
+    taskDao: QuickTaskDao,
     leadTime: Int,
     showHolidays: Boolean,
     holidayCountryCode: String
@@ -316,6 +321,15 @@ fun CalendarScreen(
 
     val eventsOnSelectedDate = remember(allEvents, selectedDate) {
         allEvents.filter { isEventOnDate(it, selectedDate) }
+    }
+
+    val sevenDaysAgo = remember { LocalDateTime.now().minusDays(7) }
+    val pendingTasks by taskDao.observePendingTasks().collectAsState(initial = emptyList())
+    val trashedTasks by taskDao.observeRecentCompletedTasks(sevenDaysAgo).collectAsState(initial = emptyList())
+    var showTaskTrash by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        taskDao.deleteCompletedBefore(LocalDateTime.now().minusDays(7))
     }
 
     val holidayOnSelectedDate = remember(holidays, selectedDate) {
@@ -535,7 +549,7 @@ fun CalendarScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     if (eventsOnSelectedDate.isEmpty()) {
                         item {
@@ -547,13 +561,36 @@ fun CalendarScreen(
                     items(eventsOnSelectedDate, key = { it.id }) { event ->
                         Box(modifier = Modifier.animateItem()) {
                             EventItem(
-                                event = event, 
+                                event = event,
                                 onEdit = { eventToEdit = event; showAddEditDialog = true },
                                 onDelete = { eventToDelete = event; showDeleteConfirmDialog = true }
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                QuickTasksSection(
+                    pendingTasks = pendingTasks,
+                    onAddTask = { title ->
+                        scope.launch {
+                            taskDao.insertTask(
+                                QuickTask(
+                                    title = title,
+                                    createdAt = LocalDateTime.now()
+                                )
+                            )
+                        }
+                    },
+                    onCompleteTask = { task ->
+                        scope.launch {
+                            taskDao.markTaskCompleted(task.id, LocalDateTime.now())
+                            taskDao.deleteCompletedBefore(LocalDateTime.now().minusDays(7))
+                        }
+                    },
+                    onOpenTrash = { showTaskTrash = true }
+                )
             }
         }
     }
@@ -599,6 +636,18 @@ fun CalendarScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showTaskTrash) {
+        TaskTrashDialog(
+            completedTasks = trashedTasks,
+            onDismiss = { showTaskTrash = false },
+            onEmptyTrash = {
+                scope.launch {
+                    taskDao.clearTrash()
+                }
             }
         )
     }
