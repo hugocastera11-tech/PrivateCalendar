@@ -21,11 +21,14 @@ import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.animateItem
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -45,6 +48,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -383,54 +387,63 @@ fun CalendarScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (isSearchActive) {
-                TopAppBar(
-                    title = {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Buscar eventos...") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            singleLine = true
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { isSearchActive = false; searchQuery = "" }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                        }
-                    },
-                    actions = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, "Clear")
+            AnimatedContent(
+                targetState = isSearchActive,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing)) togetherWith
+                        fadeOut(animationSpec = tween(AppMotion.SHORT))
+                },
+                label = "TopBarTransition"
+            ) { searchMode ->
+                if (searchMode) {
+                    TopAppBar(
+                        title = {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text("Buscar eventos...") },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                singleLine = true
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { isSearchActive = false; searchQuery = "" }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                            }
+                        },
+                        actions = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, "Clear")
+                                }
                             }
                         }
-                    }
-                )
-            } else {
-                CenterAlignedTopAppBar(
-                    title = { 
-                        Text("Private Calendar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Light) 
-                    },
-                    actions = {
-                        IconButton(onClick = onNavigateToTasks) {
-                            Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, "Tareas", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, "Search", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(onClick = onNavigateToSettings) {
-                            Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
-                )
+                    )
+                } else {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text("Private Calendar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Light)
+                        },
+                        actions = {
+                            IconButton(onClick = onNavigateToTasks) {
+                                Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, "Tareas", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { isSearchActive = true }) {
+                                Icon(Icons.Default.Search, "Search", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = onNavigateToSettings) {
+                                Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                    )
+                }
             }
         },
         floatingActionButton = {
@@ -460,11 +473,23 @@ fun CalendarScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
                 ) {
-                    items(filteredResults) { result ->
+                    items(
+                        filteredResults,
+                        key = {
+                            when (it) {
+                                is SearchResult.UserEvent -> "event_${it.event.id}"
+                                is SearchResult.HolidayEvent -> "holiday_${it.holiday.date}_${it.holiday.name}"
+                            }
+                        }
+                    ) { result ->
                         when (result) {
                             is SearchResult.UserEvent -> {
                                 EventItem(
                                     event = result.event,
+                                    modifier = Modifier.animateItem(
+                                        fadeInSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                                        fadeOutSpec = tween(AppMotion.SHORT)
+                                    ),
                                     onEdit = { 
                                         selectedDate = result.event.date
                                         displayedDate = result.event.date
@@ -476,7 +501,13 @@ fun CalendarScreen(
                                 )
                             }
                             is SearchResult.HolidayEvent -> {
-                                HolidaySearchItem(holiday = result.holiday) {
+                                HolidaySearchItem(
+                                    holiday = result.holiday,
+                                    modifier = Modifier.animateItem(
+                                        fadeInSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                                        fadeOutSpec = tween(AppMotion.SHORT)
+                                    )
+                                ) {
                                     selectedDate = result.holiday.date
                                     displayedDate = result.holiday.date
                                     isSearchActive = false
@@ -720,12 +751,12 @@ sealed class SearchResult {
 }
 
 @Composable
-fun HolidaySearchItem(holiday: Holiday, onClick: () -> Unit) {
+fun HolidaySearchItem(holiday: Holiday, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -803,11 +834,22 @@ fun WeekView(
                 val isToday = date == LocalDate.now()
                 val hasEvent = datesWithEvents.contains(date)
                 val isHoliday = holidayDates.contains(date)
+                val animatedDayBackground by animateColorAsState(
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    animationSpec = tween(AppMotion.SHORT),
+                    label = "WeekDayBg"
+                )
+                val animatedDayScale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.05f else 1f,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "WeekDayScale"
+                )
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .scale(animatedDayScale)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                        .background(animatedDayBackground)
                         .clickable { onDateSelected(date) }
                         .padding(vertical = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -887,13 +929,24 @@ fun MonthView(
                         val isToday = date == LocalDate.now()
                         val hasEvent = datesWithEvents.contains(date)
                         val isHoliday = holidayDates.contains(date)
+                        val animatedDayBackground by animateColorAsState(
+                            targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            animationSpec = tween(AppMotion.SHORT),
+                            label = "MonthDayBg"
+                        )
+                        val animatedDayScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.05f else 1f,
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                            label = "MonthDayScale"
+                        )
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
                                 .padding(2.dp)
+                                .scale(animatedDayScale)
                                 .clip(CircleShape)
-                                .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .background(animatedDayBackground)
                                 .clickable { onDateSelected(date) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -954,13 +1007,18 @@ fun YearView(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth().height(400.dp)
         ) {
-            items((1..12).toList()) { month ->
+            items((1..12).toList(), key = { it }) { month ->
                 val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.getDefault())
                 Surface(
                     onClick = { onMonthSelected(month) },
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    modifier = Modifier.aspectRatio(1.2f)
+                    modifier = Modifier
+                        .aspectRatio(1.2f)
+                        .animateItem(
+                            fadeInSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                            fadeOutSpec = tween(AppMotion.SHORT)
+                        )
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
@@ -976,12 +1034,12 @@ fun YearView(
 }
 
 @Composable
-fun EventItem(event: Event, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun EventItem(event: Event, modifier: Modifier = Modifier, onEdit: () -> Unit, onDelete: () -> Unit) {
     Surface(
         onClick = onEdit,
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -1117,9 +1175,15 @@ fun EventDialog(
                 }
             }
             
-            if (!isAllDay) {
-                Spacer(modifier = Modifier.height(24.dp))
-                TimePicker(state = timePickerState, modifier = Modifier.align(Alignment.CenterHorizontally))
+            AnimatedVisibility(
+                visible = !isAllDay,
+                enter = fadeIn(animationSpec = tween(AppMotion.MEDIUM)) + expandVertically(),
+                exit = fadeOut(animationSpec = tween(AppMotion.SHORT)) + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    TimePicker(state = timePickerState, modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
             }
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -1208,32 +1272,38 @@ fun SettingsScreen(
                     icon = Icons.Default.Flag,
                     trailing = { Switch(checked = showHolidays, onCheckedChange = onShowHolidaysChange) }
                 )
-                if (showHolidays) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Public, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text("País de festivos", style = MaterialTheme.typography.bodyLarge)
-                        }
-                        var showMenu by remember { mutableStateOf(false) }
-                        Box {
-                            TextButton(onClick = { showMenu = true }) {
-                                Text(HolidayProvider.SUPPORTED_COUNTRIES[holidayCountryCode] ?: holidayCountryCode)
+                AnimatedVisibility(
+                    visible = showHolidays,
+                    enter = fadeIn(animationSpec = tween(AppMotion.MEDIUM)) + expandVertically(),
+                    exit = fadeOut(animationSpec = tween(AppMotion.SHORT)) + shrinkVertically()
+                ) {
+                    Column {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Public, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text("País de festivos", style = MaterialTheme.typography.bodyLarge)
                             }
-                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                HolidayProvider.SUPPORTED_COUNTRIES.forEach { (code, name) ->
-                                    DropdownMenuItem(
-                                        text = { Text(name) },
-                                        onClick = { 
-                                            onHolidayCountryChange(code)
-                                            showMenu = false 
-                                        }
-                                    )
+                            var showMenu by remember { mutableStateOf(false) }
+                            Box {
+                                TextButton(onClick = { showMenu = true }) {
+                                    Text(HolidayProvider.SUPPORTED_COUNTRIES[holidayCountryCode] ?: holidayCountryCode)
+                                }
+                                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                    HolidayProvider.SUPPORTED_COUNTRIES.forEach { (code, name) ->
+                                        DropdownMenuItem(
+                                            text = { Text(name) },
+                                            onClick = {
+                                                onHolidayCountryChange(code)
+                                                showMenu = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
