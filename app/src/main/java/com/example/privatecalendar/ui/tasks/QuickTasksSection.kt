@@ -1,5 +1,7 @@
 package com.example.privatecalendar.ui.tasks
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -136,56 +138,64 @@ fun QuickTasksScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            if (pendingTasks.isEmpty()) {
-                Box(Modifier.fillMaxSize().padding(bottom = 64.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.CheckCircle, 
-                            contentDescription = null, 
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Todo al día",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
-                        )
+            AnimatedContent(
+                targetState = pendingTasks.isEmpty(),
+                label = "EmptyTasksTransition",
+                modifier = Modifier.weight(1f)
+            ) { isEmpty ->
+                if (isEmpty) {
+                    Box(Modifier.fillMaxSize().padding(bottom = 64.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.CheckCircle, 
+                                contentDescription = null, 
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Todo al día",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+                            )
+                        }
                     }
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 32.dp)
-                ) {
-                    items(pendingTasks, key = { it.id }) { task ->
-                        Surface(
-                            shape = RoundedCornerShape(24.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 18.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = task.title,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                IconButton(
-                                    onClick = { 
-                                        scope.launch {
-                                            taskDao.markTaskCompleted(task.id, LocalDateTime.now())
-                                            taskDao.deleteCompletedBefore(LocalDateTime.now().minusDays(7))
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        items(pendingTasks, key = { it.id }) { task ->
+                            Box(modifier = Modifier.animateItem()) {
+                                Surface(
+                                    shape = RoundedCornerShape(24.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = task.title,
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        IconButton(
+                                            onClick = { 
+                                                scope.launch {
+                                                    taskDao.markTaskCompleted(task.id, LocalDateTime.now())
+                                                    taskDao.deleteCompletedBefore(LocalDateTime.now().minusDays(7))
+                                                }
+                                            }
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = "Completar", tint = MaterialTheme.colorScheme.primary)
                                         }
                                     }
-                                ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = "Completar", tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
@@ -222,7 +232,7 @@ fun TaskTrashDialog(
         shape = RoundedCornerShape(28.dp),
         title = { Text("Papelera (7 días)", fontWeight = FontWeight.Medium) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.animateContentSize()) {
                 if (completedTasks.isEmpty()) {
                     Text(
                         text = "No hay tareas recientes en la papelera.",
@@ -235,23 +245,25 @@ fun TaskTrashDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(completedTasks, key = { it.id }) { task ->
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                            Box(modifier = Modifier.animateItem()) {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                 ) {
-                                    Icon(Icons.Default.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(task.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(
-                                            text = "Hecho: ${task.completedAt?.format(formatter)}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.secondary
-                                        )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(task.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(
+                                                text = "Hecho: ${task.completedAt?.format(formatter)}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
                                     }
                                 }
                             }
