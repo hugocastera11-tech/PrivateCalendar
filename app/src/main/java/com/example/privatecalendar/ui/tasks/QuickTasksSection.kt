@@ -158,6 +158,26 @@ fun QuickTasksSection(
     }
 }
 
+
+@Deprecated(
+    message = "Use QuickTasksSection instead",
+    replaceWith = ReplaceWith("QuickTasksSection(pendingTasks, onAddTask, onCompleteTask, onOpenTrash)")
+)
+@Composable
+fun QuickTasksScreen(
+    pendingTasks: List<QuickTask>,
+    onAddTask: (String) -> Unit,
+    onCompleteTask: (QuickTask) -> Unit,
+    onOpenTrash: () -> Unit
+) {
+    QuickTasksSection(
+        pendingTasks = pendingTasks,
+        onAddTask = onAddTask,
+        onCompleteTask = onCompleteTask,
+        onOpenTrash = onOpenTrash
+    )
+}
+
 @Composable
 fun TaskTrashDialog(
     completedTasks: List<QuickTask>,
