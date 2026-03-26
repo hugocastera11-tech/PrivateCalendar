@@ -19,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -54,6 +56,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.work.*
 import com.example.privatecalendar.data.*
+import com.example.privatecalendar.ui.tasks.QuickTasksSection
+import com.example.privatecalendar.ui.tasks.TaskTrashDialog
+import com.example.privatecalendar.ui.theme.AppMotion
 import com.example.privatecalendar.ui.theme.PrivateCalendarTheme
 import com.example.privatecalendar.widget.CalendarWidget
 import com.example.privatecalendar.worker.NotificationWorker
@@ -98,6 +103,7 @@ class MainActivity : AppCompatActivity() {
             val navController = rememberNavController()
             val db = remember { AppDatabase.getDatabase(context) }
             val eventDao = db.eventDao()
+            val taskDao = db.quickTaskDao()
             val scope = rememberCoroutineScope()
 
             var isAuthenticated by remember { mutableStateOf(false) }
@@ -141,15 +147,40 @@ class MainActivity : AppCompatActivity() {
                         NavHost(
                             navController = navController, 
                             startDestination = "calendar",
-                            enterTransition = { fadeIn(animationSpec = tween(400)) + slideInHorizontally(initialOffsetX = { it / 2 }) },
-                            exitTransition = { fadeOut(animationSpec = tween(400)) + slideOutHorizontally(targetOffsetX = { -it / 2 }) },
-                            popEnterTransition = { fadeIn(animationSpec = tween(400)) + slideInHorizontally(initialOffsetX = { -it / 2 }) },
-                            popExitTransition = { fadeOut(animationSpec = tween(400)) + slideOutHorizontally(targetOffsetX = { it / 2 }) }
+                            enterTransition = {
+                                fadeIn(animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing)) +
+                                    slideInHorizontally(
+                                        animationSpec = tween(AppMotion.LONG, easing = FastOutSlowInEasing),
+                                        initialOffsetX = { it / 3 }
+                                    )
+                            },
+                            exitTransition = {
+                                fadeOut(animationSpec = tween(AppMotion.SHORT)) +
+                                    slideOutHorizontally(
+                                        animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                                        targetOffsetX = { -it / 5 }
+                                    )
+                            },
+                            popEnterTransition = {
+                                fadeIn(animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing)) +
+                                    slideInHorizontally(
+                                        animationSpec = tween(AppMotion.LONG, easing = FastOutSlowInEasing),
+                                        initialOffsetX = { -it / 3 }
+                                    )
+                            },
+                            popExitTransition = {
+                                fadeOut(animationSpec = tween(AppMotion.SHORT)) +
+                                    slideOutHorizontally(
+                                        animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                                        targetOffsetX = { it / 5 }
+                                    )
+                            }
                         ) {
                             composable("calendar") {
                                 CalendarScreen(
                                     onNavigateToSettings = { navController.navigate("settings") },
                                     eventDao = eventDao,
+                                    taskDao = taskDao,
                                     leadTime = leadTime,
                                     showHolidays = showHolidays,
                                     holidayCountryCode = holidayCountryCode
@@ -267,6 +298,7 @@ enum class CalendarViewMode {
 fun CalendarScreen(
     onNavigateToSettings: () -> Unit,
     eventDao: EventDao,
+    taskDao: QuickTaskDao,
     leadTime: Int,
     showHolidays: Boolean,
     holidayCountryCode: String
@@ -316,6 +348,15 @@ fun CalendarScreen(
 
     val eventsOnSelectedDate = remember(allEvents, selectedDate) {
         allEvents.filter { isEventOnDate(it, selectedDate) }
+    }
+
+    val sevenDaysAgo = remember { LocalDateTime.now().minusDays(7) }
+    val pendingTasks by taskDao.observePendingTasks().collectAsState(initial = emptyList())
+    val trashedTasks by taskDao.observeRecentCompletedTasks(sevenDaysAgo).collectAsState(initial = emptyList())
+    var showTaskTrash by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        taskDao.deleteCompletedBefore(LocalDateTime.now().minusDays(7))
     }
 
     val holidayOnSelectedDate = remember(holidays, selectedDate) {
@@ -461,8 +502,15 @@ fun CalendarScreen(
                 AnimatedContent(
                     targetState = viewMode,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.95f) togetherWith
-                        fadeOut(animationSpec = tween(300))
+                        fadeIn(animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing)) +
+                            scaleIn(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                initialScale = 0.97f
+                            ) togetherWith
+                            fadeOut(animationSpec = tween(AppMotion.SHORT))
                     },
                     label = "CalendarViewTransition"
                 ) { targetMode ->
@@ -507,8 +555,14 @@ fun CalendarScreen(
                 AnimatedContent(
                     targetState = selectedDate,
                     transitionSpec = {
-                        slideInVertically { it / 2 } + fadeIn() togetherWith
-                        slideOutVertically { -it / 2 } + fadeOut()
+                        slideInVertically(
+                            animationSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                            initialOffsetY = { it / 4 }
+                        ) + fadeIn(animationSpec = tween(AppMotion.MEDIUM)) togetherWith
+                            slideOutVertically(
+                                animationSpec = tween(AppMotion.SHORT),
+                                targetOffsetY = { -it / 6 }
+                            ) + fadeOut(animationSpec = tween(AppMotion.SHORT))
                     },
                     label = "DateTextTransition"
                 ) { date ->
@@ -535,7 +589,7 @@ fun CalendarScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     if (eventsOnSelectedDate.isEmpty()) {
                         item {
@@ -545,15 +599,47 @@ fun CalendarScreen(
                         }
                     }
                     items(eventsOnSelectedDate, key = { it.id }) { event ->
-                        Box(modifier = Modifier.animateItem()) {
+                        Box(
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = tween(AppMotion.MEDIUM, easing = FastOutSlowInEasing),
+                                placementSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                fadeOutSpec = tween(AppMotion.SHORT)
+                            )
+                        ) {
                             EventItem(
-                                event = event, 
+                                event = event,
                                 onEdit = { eventToEdit = event; showAddEditDialog = true },
                                 onDelete = { eventToDelete = event; showDeleteConfirmDialog = true }
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                QuickTasksSection(
+                    pendingTasks = pendingTasks,
+                    onAddTask = { title ->
+                        scope.launch {
+                            taskDao.insertTask(
+                                QuickTask(
+                                    title = title,
+                                    createdAt = LocalDateTime.now()
+                                )
+                            )
+                        }
+                    },
+                    onCompleteTask = { task ->
+                        scope.launch {
+                            taskDao.markTaskCompleted(task.id, LocalDateTime.now())
+                            taskDao.deleteCompletedBefore(LocalDateTime.now().minusDays(7))
+                        }
+                    },
+                    onOpenTrash = { showTaskTrash = true }
+                )
             }
         }
     }
@@ -599,6 +685,18 @@ fun CalendarScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showTaskTrash) {
+        TaskTrashDialog(
+            completedTasks = trashedTasks,
+            onDismiss = { showTaskTrash = false },
+            onEmptyTrash = {
+                scope.launch {
+                    taskDao.clearTrash()
+                }
             }
         )
     }
