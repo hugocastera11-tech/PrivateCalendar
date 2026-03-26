@@ -38,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -179,11 +180,18 @@ class MainActivity : AppCompatActivity() {
                             composable("calendar") {
                                 CalendarScreen(
                                     onNavigateToSettings = { navController.navigate("settings") },
+                                    onNavigateToTasks = { navController.navigate("quick_tasks") },
                                     eventDao = eventDao,
                                     taskDao = taskDao,
                                     leadTime = leadTime,
                                     showHolidays = showHolidays,
                                     holidayCountryCode = holidayCountryCode
+                                )
+                            }
+                            composable("quick_tasks") {
+                                QuickTasksScreen(
+                                    onBack = { navController.popBackStack() },
+                                    taskDao = taskDao
                                 )
                             }
                             composable("settings") {
@@ -297,6 +305,7 @@ enum class CalendarViewMode {
 @Composable
 fun CalendarScreen(
     onNavigateToSettings: () -> Unit,
+    onNavigateToTasks: () -> Unit,
     eventDao: EventDao,
     taskDao: QuickTaskDao,
     leadTime: Int,
@@ -410,6 +419,9 @@ fun CalendarScreen(
                         Text("Private Calendar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Light) 
                     },
                     actions = {
+                        IconButton(onClick = onNavigateToTasks) {
+                            Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, "Tareas", tint = MaterialTheme.colorScheme.primary)
+                        }
                         IconButton(onClick = { isSearchActive = true }) {
                             Icon(Icons.Default.Search, "Search", tint = MaterialTheme.colorScheme.primary)
                         }
