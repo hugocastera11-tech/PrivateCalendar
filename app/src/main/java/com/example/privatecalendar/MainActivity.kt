@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -75,13 +74,15 @@ class MainActivity : AppCompatActivity() {
             
             var isAuthenticated by remember { mutableStateOf(value = false) }
             var isAuthChecked by remember { mutableStateOf(value = false) }
+            var authAttempt by remember { mutableStateOf(value = 0) }
+            var authErrorMessage by remember { mutableStateOf<String?>(null) }
 
             val context = LocalContext.current
             val authTitle = stringResource(R.string.secure_access)
             val authSubtitle = stringResource(R.string.auth_subtitle)
             val authErrorMsg = stringResource(R.string.auth_required)
 
-            LaunchedEffect(Unit) {
+            LaunchedEffect(authAttempt) {
                 val settingsManager = SettingsManager(context)
                 val biometricEnabled = settingsManager.isBiometricEnabled.first()
                 
@@ -95,16 +96,23 @@ class MainActivity : AppCompatActivity() {
                         showBiometricPrompt(
                             title = authTitle,
                             subtitle = authSubtitle,
-                            onSuccess = { 
+                            onSuccess = {
+                                authErrorMessage = null
                                 isAuthenticated = true
                                 isAuthChecked = true
                                 checkAndRequestNotifications()
+                            },
+                            onRetryableError = { message ->
+                                authErrorMessage = message
+                                isAuthenticated = false
+                                isAuthChecked = true
+                            },
+                            onFatalError = { message ->
+                                authErrorMessage = message.ifBlank { authErrorMsg }
+                                isAuthenticated = false
+                                isAuthChecked = true
                             }
-                        ) { 
-                            Toast.makeText(context, authErrorMsg, Toast.LENGTH_SHORT).show()
-                            isAuthChecked = true
-                            finish() 
-                        }
+                        )
                     } else {
                         // Si está activado pero no hay hardware o no está configurado, dejamos entrar
                         isAuthenticated = true
@@ -213,12 +221,12 @@ class MainActivity : AppCompatActivity() {
                             else -> {
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(stringResource(R.string.auth_required))
+                                        Text(authErrorMessage ?: stringResource(R.string.auth_required))
                                         Spacer(modifier = Modifier.height(16.dp))
                                         Button(
                                             onClick = { 
                                                 isAuthChecked = false
-                                                // Esto disparará el LaunchedEffect de nuevo
+                                                authAttempt++
                                             }
                                         ) {
                                             Text(stringResource(android.R.string.ok)) // O un recurso de reintento si existe
@@ -241,14 +249,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showBiometricPrompt(title: String, subtitle: String, onSuccess: () -> Unit, onError: () -> Unit) {
+    private fun showBiometricPrompt(
+        title: String,
+        subtitle: String,
+        onSuccess: () -> Unit,
+        onRetryableError: (String) -> Unit,
+        onFatalError: (String) -> Unit,
+    ) {
         val executor = ContextCompat.getMainExecutor(this)
         val biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    onError()
+                    when (errorCode) {
+                        BiometricPrompt.ERROR_CANCELED,
+                        BiometricPrompt.ERROR_USER_CANCELED,
+                        BiometricPrompt.ERROR_NEGATIVE_BUTTON -> onRetryableError(errString.toString())
+                        else -> onFatalError(errString.toString())
+                    }
                 }
+
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     onSuccess()
