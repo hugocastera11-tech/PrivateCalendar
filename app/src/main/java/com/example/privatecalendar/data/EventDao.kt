@@ -16,14 +16,33 @@ interface EventDao {
     fun getAllEvents(): Flow<List<Event>>
 
     @Query("SELECT * FROM events")
-    suspend fun getAllEventsSync(): List<Event>
+    fun getAllEventsSync(): List<Event>
+
+    @Query("SELECT * FROM events WHERE id = :id")
+    suspend fun getEventById(id: Int): Event?
+
+    @Query("SELECT * FROM events WHERE externalId = :externalId LIMIT 1")
+    suspend fun getEventByExternalId(externalId: String): Event?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertEvent(event: Event): Long
+    fun insertEvent(event: Event): Long
 
     @Update
-    suspend fun updateEvent(event: Event)
+    fun updateEvent(event: Event)
 
     @Delete
-    suspend fun deleteEvent(event: Event)
+    fun deleteEvent(event: Event)
+
+    // Category DAOs
+    @Query("SELECT * FROM event_categories")
+    fun getAllCategories(): Flow<List<EventCategory>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategory(category: EventCategory)
+
+    @Update
+    suspend fun updateCategory(category: EventCategory)
+
+    @Delete
+    suspend fun deleteCategory(category: EventCategory)
 }

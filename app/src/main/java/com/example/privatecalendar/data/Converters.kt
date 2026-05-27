@@ -43,6 +43,19 @@ class Converters {
     }
 
     @TypeConverter
+    fun fromEncryptedString(value: EncryptedString?): String? {
+        return value?.let { 
+            if (it.isAlreadyDecrypted) com.example.privatecalendar.utils.CryptoManager.encrypt(it.value)
+            else it.value
+        }
+    }
+
+    @TypeConverter
+    fun toEncryptedString(value: String?): EncryptedString? {
+        return value?.let { EncryptedString(it, isAlreadyDecrypted = false) }
+    }
+
+    @TypeConverter
     fun fromRecurrenceType(value: RecurrenceType): String {
         return value.name
     }
@@ -50,5 +63,20 @@ class Converters {
     @TypeConverter
     fun toRecurrenceType(value: String): RecurrenceType {
         return RecurrenceType.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromStringList(value: List<String>): String {
+        return org.json.JSONArray(value).toString()
+    }
+
+    @TypeConverter
+    fun toStringList(value: String): List<String> {
+        val jsonArray = org.json.JSONArray(value)
+        val list = mutableListOf<String>()
+        for (i in 0 until jsonArray.length()) {
+            list.add(jsonArray.getString(i))
+        }
+        return list
     }
 }

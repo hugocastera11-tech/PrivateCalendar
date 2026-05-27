@@ -9,7 +9,12 @@ import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.privatecalendar.MainActivity
+import com.example.privatecalendar.data.AppDatabase
+import com.example.privatecalendar.data.RecurrenceType
+import com.example.privatecalendar.data.SettingsManager
+import com.example.privatecalendar.utils.NotificationHelper
 import com.example.privatecalendar.widget.CalendarWidget
+import kotlinx.coroutines.flow.first
 
 class NotificationWorker(
     context: Context,
@@ -20,11 +25,31 @@ class NotificationWorker(
         val title = inputData.getString("title") ?: "Evento próximo"
         val description = inputData.getString("description") ?: "Tienes un evento pronto"
         val notificationId = inputData.getInt("notificationId", 0)
+        val skipNotification = inputData.getBoolean("skipNotification", false)
 
-        showNotification(title, description, notificationId)
+        if (!skipNotification) {
+            showNotification(title, description, notificationId)
+        }
         
+        // Reprogramar si es recurrente
+        try {
+            val db = AppDatabase.getDatabase(applicationContext)
+            val event = db.eventDao().getEventById(notificationId)
+            if (event != null && event.recurrence != RecurrenceType.NONE) {
+                val settings = SettingsManager(applicationContext)
+                val lead = settings.notificationLeadTime.first()
+                val adHour = settings.allDayNotificationHour.first()
+                val adDayBefore = settings.allDayNotificationDayBefore.first()
+                
+                NotificationHelper.scheduleNotification(
+                    applicationContext, event.date, event.time, event.title.text, event.id, lead, event.isAllDay, adHour, adDayBefore, event.recurrence
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         // Sincronizar el widget al disparar una notificación
-        // Esto asegura que si el evento ya pasó o el día cambió, el widget se refresque.
         try {
             CalendarWidget().updateAll(applicationContext)
         } catch (e: Exception) {
@@ -41,7 +66,7 @@ class NotificationWorker(
         
         val pendingIntent = PendingIntent.getActivity(
             applicationContext, 
-            0, 
+            id,
             intent, 
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

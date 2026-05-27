@@ -1,14 +1,18 @@
 package com.example.privatecalendar.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
@@ -18,6 +22,7 @@ import androidx.glance.layout.*
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.example.privatecalendar.MainActivity
 import com.example.privatecalendar.data.AppDatabase
 import com.example.privatecalendar.data.Event
 import com.example.privatecalendar.data.isEventOnDate
@@ -27,10 +32,10 @@ import java.time.format.DateTimeFormatter
 class CalendarWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val db = AppDatabase.getDatabase(context)
-        // Usamos lectura directa (Sync) para asegurar datos frescos en el proceso del widget
         val allEvents = try {
-            db.eventDao().getAllEventsSync()
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                AppDatabase.getDatabase(context).eventDao().getAllEventsSync()
+            }
         } catch (e: Exception) {
             emptyList()
         }
@@ -50,56 +55,72 @@ class CalendarWidget : GlanceAppWidget() {
 
     @Composable
     private fun WidgetContent(todayEvents: List<Event>, tomorrowEvents: List<Event>) {
-        Column(
+        val context = LocalContext.current
+        
+        Box(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(24.dp)
-                .padding(12.dp)
         ) {
-            // Header
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .padding(12.dp)
             ) {
-                Box(
-                    modifier = GlanceModifier
-                        .size(10.dp)
-                        .background(GlanceTheme.colors.primary)
-                        .cornerRadius(5.dp)
-                ) {}
-                Spacer(modifier = GlanceModifier.width(6.dp))
-                Text(
-                    text = "Próximos",
-                    style = TextStyle(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = GlanceTheme.colors.onSurface
+                // Header
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = GlanceModifier
+                            .size(10.dp)
+                            .background(GlanceTheme.colors.primary)
+                            .cornerRadius(5.dp)
+                    ) {}
+                    Spacer(modifier = GlanceModifier.width(6.dp))
+                    Text(
+                        text = "Próximos",
+                        style = TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = GlanceTheme.colors.onSurface
+                        )
                     )
-                )
+                }
+                
+                LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+                    item { SectionTitle("Hoy") }
+                    if (todayEvents.isEmpty()) {
+                        item { EmptyLabel() }
+                    } else {
+                        items(todayEvents) { event ->
+                            CompactEventRow(event)
+                        }
+                    }
+                    
+                    item { Spacer(modifier = GlanceModifier.height(8.dp)) }
+                    
+                    item { SectionTitle("Mañana") }
+                    if (tomorrowEvents.isEmpty()) {
+                        item { EmptyLabel() }
+                    } else {
+                        items(tomorrowEvents) { event ->
+                            CompactEventRow(event)
+                        }
+                    }
+                }
             }
             
-            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-                item { SectionTitle("Hoy") }
-                if (todayEvents.isEmpty()) {
-                    item { EmptyLabel() }
-                } else {
-                    items(todayEvents) { event ->
-                        CompactEventRow(event)
-                    }
-                }
-                
-                item { Spacer(modifier = GlanceModifier.height(8.dp)) }
-                
-                item { SectionTitle("Mañana") }
-                if (tomorrowEvents.isEmpty()) {
-                    item { EmptyLabel() }
-                } else {
-                    items(tomorrowEvents) { event ->
-                        CompactEventRow(event)
-                    }
-                }
-            }
+            // Capa invisible para detectar el clic en todo el widget
+            Spacer(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .clickable(actionStartActivity(Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }))
+            )
         }
     }
 
@@ -125,7 +146,7 @@ class CalendarWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = event.title,
+                text = event.title.text,
                 style = TextStyle(fontSize = 12.sp, color = GlanceTheme.colors.onSurface),
                 maxLines = 1,
                 modifier = GlanceModifier.defaultWeight()

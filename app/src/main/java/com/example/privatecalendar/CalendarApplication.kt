@@ -8,7 +8,42 @@ import java.util.concurrent.TimeUnit
 class CalendarApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        
+        // Limpiar posibles tareas antiguas de WorkManager de versiones anteriores
+        // para evitar notificaciones fantasma
+        WorkManager.getInstance(this).cancelAllWorkByTag("event_notification")
+
         schedulePeriodicWidgetUpdate()
+        scheduleDailyQuickTasksReminder()
+    }
+
+    private fun scheduleDailyQuickTasksReminder() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+            .build()
+
+        // Programar para las 8:30 AM cada día
+        val periodicWorkRequest = PeriodicWorkRequestBuilder<com.example.privatecalendar.worker.QuickTasksReminderWorker>(
+            24, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .setInitialDelay(calculateInitialDelayForMorning(), TimeUnit.MILLISECONDS)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daily_tasks_reminder",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicWorkRequest
+        )
+    }
+
+    private fun calculateInitialDelayForMorning(): Long {
+        val now = java.time.LocalDateTime.now()
+        var target = java.time.LocalDateTime.of(now.toLocalDate(), java.time.LocalTime.of(8, 30))
+        if (now.isAfter(target)) {
+            target = target.plusDays(1)
+        }
+        return java.time.Duration.between(now, target).toMillis()
     }
 
     private fun schedulePeriodicWidgetUpdate() {
