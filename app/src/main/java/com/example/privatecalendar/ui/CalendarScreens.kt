@@ -27,7 +27,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -51,6 +50,8 @@ import com.example.privatecalendar.worker.NotificationWorker
 import kotlinx.coroutines.*
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.core.net.toUri
 import java.time.format.TextStyle
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -73,7 +74,7 @@ sealed class SearchResult {
 private val FluidSpringFloat = spring<Float>(dampingRatio = 0.85f, stiffness = Spring.StiffnessLow)
 private val FluidSpringOffset = spring<IntOffset>(dampingRatio = 0.85f, stiffness = Spring.StiffnessLow)
 private val FluidSpringSize = spring<IntSize>(dampingRatio = 0.85f, stiffness = Spring.StiffnessLow)
-private val BouncySpringFloat = spring<Float>(dampingRatio = 0.65f, stiffness = Spring.StiffnessMediumLow)
+    // private val BouncySpringFloat = spring<Float>(dampingRatio = 0.65f, stiffness = Spring.StiffnessMediumLow)
 private val StandardTween = tween<Float>(durationMillis = 350, easing = FastOutSlowInEasing)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -106,14 +107,14 @@ fun CalendarScreen(
     }
     
     // Flag para evitar la animación inicial al cargar la app
-    var isFirstLoad by remember { mutableStateOf(true) }
+    var isFirstLoad by remember { mutableStateOf(value = true) }
 
     LaunchedEffect(defaultViewModeSetting) {
         if (defaultViewModeSetting == "LOADING") return@LaunchedEffect
         
         val targetMode = try {
             CalendarViewMode.valueOf(defaultViewModeSetting)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             CalendarViewMode.MONTH
         }
         
@@ -142,7 +143,7 @@ fun CalendarScreen(
     var lastNavTime by remember { mutableLongStateOf(0L) }
     val safeNavigate: (() -> Unit) -> Unit = { action ->
         val now = System.currentTimeMillis()
-        if (now - lastNavTime > 500) {
+        if ((now - lastNavTime) > 500) {
             lastNavTime = now
             action()
         }
@@ -613,7 +614,7 @@ fun calculateDatesWithEvents(allEvents: List<Event>, displayedDate: LocalDate, v
     val range = when(viewMode) {
         CalendarViewMode.DAY -> listOf(displayedDate)
         CalendarViewMode.WEEK -> {
-            val start = displayedDate.with(java.time.DayOfWeek.MONDAY)
+            val start = displayedDate.with(DayOfWeek.MONDAY)
             (0..6).map { start.plusDays(it.toLong()) }
         }
         CalendarViewMode.MONTH -> {
@@ -1294,13 +1295,13 @@ fun EventDialog(
                 attachments.forEach { uriString ->
                     val fileName = remember(uriString) {
                         try {
-                            val uri = android.net.Uri.parse(uriString)
+                            val uri = uriString.toUri()
                             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                                 val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                                 cursor.moveToFirst()
                                 cursor.getString(nameIndex)
                             } ?: uri.path?.substringAfterLast('/') ?: uriString
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             uriString.substringAfterLast('/')
                         }
                     }
@@ -1312,11 +1313,11 @@ fun EventDialog(
                             .clickable {
                                 try {
                                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                        data = android.net.Uri.parse(uriString)
+                                        data = uriString.toUri()
                                         flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                                     }
                                     context.startActivity(intent)
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     android.widget.Toast.makeText(context, "Error al abrir archivo", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -1576,7 +1577,7 @@ fun SettingsScreen(
                         }
                     )
                     Text(
-                        text = "${stringResource(R.string.all_day_notif_hour)}: ${String.format("%02d:00", allDayHour)}",
+                        text = "${stringResource(R.string.all_day_notif_hour)}: ${String.format(Locale.getDefault(), "%02d:00", allDayHour)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.padding(top = 8.dp)
@@ -1752,6 +1753,12 @@ fun SettingsScreen(
                         }
                     }
                 )
+                Text(
+                    text = "Nota: Usa esta opción para migrar tus datos a un nuevo dispositivo. El archivo exportado se descifra temporalmente para ser cifrado de nuevo con la clave de tu nuevo teléfono al importarlo.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsItem(
                     title = stringResource(R.string.import_backup),
@@ -1807,7 +1814,7 @@ fun SettingsScreen(
                                         addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
                                     context.startActivity(intent)
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     android.widget.Toast.makeText(context, "No se encontró aplicación de correo", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -1854,7 +1861,7 @@ fun CategoryEditDialog(
     onConfirm: (EncryptedString, Long) -> Unit
 ) {
     var name by remember { mutableStateOf(category?.name?.text ?: "") }
-    var selectedColor by remember { mutableStateOf(category?.color ?: 0xFFF44336) }
+    var selectedColor by remember { mutableLongStateOf(category?.color ?: 0xFFF44336) }
     
     val presetColors = listOf(
         0xFFF44336, // Red

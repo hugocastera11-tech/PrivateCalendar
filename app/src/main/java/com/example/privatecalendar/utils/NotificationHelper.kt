@@ -4,6 +4,8 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.core.content.edit
 import com.example.privatecalendar.MainActivity
 import com.example.privatecalendar.R
 import com.example.privatecalendar.data.RecurrenceType
@@ -53,7 +55,9 @@ object NotificationHelper {
             
             if (now.isAfter(eventEndTime)) {
                 var nextDate = targetEventDate
-                for (i in 1..100) {
+                var count = 0
+                while (count < 100) {
+                    count++
                     nextDate = when (recurrence) {
                         RecurrenceType.DAILY -> nextDate.plusDays(1)
                         RecurrenceType.WEEKLY -> nextDate.plusWeeks(1)
@@ -130,15 +134,24 @@ object NotificationHelper {
         }
 
         val triggerAtMillis = notificationTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        val showIntent = Intent(context, MainActivity::class.java)
+        val showPendingIntent = PendingIntent.getActivity(context, id, showIntent, PendingIntent.FLAG_IMMUTABLE)
+        val alarmInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showPendingIntent)
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setAlarmClock(alarmInfo, pendingIntent)
+                } else {
+                    // Si no tiene permiso de alarma exacta, usamos el método normal pero intentando ser lo más precisos posible
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                }
             } else {
-                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                alarmManager.setAlarmClock(alarmInfo, pendingIntent)
             }
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        } catch (_: SecurityException) {
+            // Fallback final por si acaso
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         }
     }
 
@@ -155,6 +168,6 @@ object NotificationHelper {
         }
         // Limpiar también el historial al borrar el evento
         context.getSharedPreferences("notif_history", Context.MODE_PRIVATE)
-            .edit().remove("last_shown_$id").apply()
+            .edit { remove("last_shown_$id") }
     }
 }

@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { _ -> }
 
     override fun attachBaseContext(newBase: Context) {
@@ -73,8 +73,8 @@ class MainActivity : AppCompatActivity() {
                 com.example.privatecalendar.ui.theme.AppTheme.DEFAULT
             }
             
-            var isAuthenticated by remember { mutableStateOf(false) }
-            var isAuthChecked by remember { mutableStateOf(false) }
+            var isAuthenticated by remember { mutableStateOf(value = false) }
+            var isAuthChecked by remember { mutableStateOf(value = false) }
 
             val context = LocalContext.current
             val authTitle = stringResource(R.string.secure_access)
@@ -99,13 +99,12 @@ class MainActivity : AppCompatActivity() {
                                 isAuthenticated = true
                                 isAuthChecked = true
                                 checkAndRequestNotifications()
-                            },
-                            onError = { 
-                                Toast.makeText(context, authErrorMsg, Toast.LENGTH_SHORT).show()
-                                isAuthChecked = true
-                                finish() 
                             }
-                        )
+                        ) { 
+                            Toast.makeText(context, authErrorMsg, Toast.LENGTH_SHORT).show()
+                            isAuthChecked = true
+                            finish() 
+                        }
                     } else {
                         // Si está activado pero no hay hardware o no está configurado, dejamos entrar
                         isAuthenticated = true
@@ -167,14 +166,15 @@ class MainActivity : AppCompatActivity() {
                                             viewModel = viewModel,
                                             onNavigateToSettings = { navController.navigate("settings") },
                                             onNavigateToTasks = { navController.navigate("quick_tasks") },
-                                            onNavigateToDay = { date -> navController.navigate("day_view/$date") }
-                                        )
+                                        ) { date -> 
+                                            navController.navigate("day_view/$date") 
+                                        }
                                     }
                                     composable("day_view/{date}") { backStackEntry ->
                                         val dateString = backStackEntry.arguments?.getString("date")
                                         val date = try {
                                             java.time.LocalDate.parse(dateString)
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             java.time.LocalDate.now()
                                         }
                                         com.example.privatecalendar.ui.DayViewScreen(
@@ -215,10 +215,12 @@ class MainActivity : AppCompatActivity() {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(stringResource(R.string.auth_required))
                                         Spacer(modifier = Modifier.height(16.dp))
-                                        Button(onClick = { 
-                                            isAuthChecked = false
-                                            // Esto disparará el LaunchedEffect de nuevo
-                                        }) {
+                                        Button(
+                                            onClick = { 
+                                                isAuthChecked = false
+                                                // Esto disparará el LaunchedEffect de nuevo
+                                            }
+                                        ) {
                                             Text(stringResource(android.R.string.ok)) // O un recurso de reintento si existe
                                         }
                                     }
@@ -263,10 +265,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_HIGH)
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 }
