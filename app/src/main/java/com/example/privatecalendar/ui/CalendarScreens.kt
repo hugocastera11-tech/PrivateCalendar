@@ -1298,8 +1298,8 @@ fun EventDialog(
                             val uri = uriString.toUri()
                             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                                 val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                                cursor.moveToFirst()
-                                cursor.getString(nameIndex)
+                                if (nameIndex >= 0 && cursor.moveToFirst()) cursor.getString(nameIndex)
+                                else null
                             } ?: uri.path?.substringAfterLast('/') ?: uriString
                         } catch (_: Exception) {
                             uriString.substringAfterLast('/')

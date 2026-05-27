@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.content.edit
-import com.example.privatecalendar.MainActivity
 import com.example.privatecalendar.R
 import com.example.privatecalendar.data.RecurrenceType
 import java.time.LocalDate
@@ -110,6 +109,8 @@ object NotificationHelper {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        // Evitar alarmas duplicadas al editar/reprogramar el mismo evento.
+        alarmManager.cancel(pendingIntent)
 
         // CASO ESPECIAL: Si la hora de notificación ya pasó pero el evento NO ha terminado todavía
         if (now.isAfter(notificationTime)) {
@@ -134,20 +135,21 @@ object NotificationHelper {
         }
 
         val triggerAtMillis = notificationTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val showIntent = Intent(context, MainActivity::class.java)
-        val showPendingIntent = PendingIntent.getActivity(context, id, showIntent, PendingIntent.FLAG_IMMUTABLE)
-        val alarmInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showPendingIntent)
-
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setAlarmClock(alarmInfo, pendingIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val canUseExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    alarmManager.canScheduleExactAlarms()
                 } else {
-                    // Si no tiene permiso de alarma exacta, usamos el método normal pero intentando ser lo más precisos posible
+                    true
+                }
+                if (canUseExact) {
+                    // Precisión al minuto exacto incluso en Doze.
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                } else {
                     alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
                 }
             } else {
-                alarmManager.setAlarmClock(alarmInfo, pendingIntent)
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
             }
         } catch (_: SecurityException) {
             // Fallback final por si acaso
@@ -166,8 +168,13 @@ object NotificationHelper {
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
         }
-        // Limpiar también el historial al borrar el evento
-        context.getSharedPreferences("notif_history", Context.MODE_PRIVATE)
-            .edit { remove("last_shown_$id") }
+        // Limpiar también el historial al borrar el evento.
+        // El formato real de guardado es shown_<eventId>_<occurrenceEpochSeconds>.
+        val prefs = context.getSharedPreferences("notif_history", Context.MODE_PRIVATE)
+        prefs.edit {
+            prefs.all.keys
+                .filter { it.startsWith("shown_${id}_") }
+                .forEach(::remove)
+        }
     }
 }

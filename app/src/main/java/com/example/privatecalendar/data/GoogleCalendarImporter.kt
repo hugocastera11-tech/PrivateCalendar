@@ -49,6 +49,10 @@ object GoogleCalendarImporter {
                 val allDayIdx = cursor.getColumnIndex(CalendarContract.Events.ALL_DAY)
                 val tzIdx = cursor.getColumnIndex(CalendarContract.Events.EVENT_TIMEZONE)
                 val locIdx = cursor.getColumnIndex(CalendarContract.Events.EVENT_LOCATION)
+                if (idIdx < 0 || titleIdx < 0 || startIdx < 0 || allDayIdx < 0) {
+                    android.util.Log.e("GoogleCalendarImporter", "Calendar provider does not expose required columns")
+                    return@use
+                }
 
                 while (cursor.moveToNext()) {
                     try {
