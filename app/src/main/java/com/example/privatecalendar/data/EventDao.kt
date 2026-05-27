@@ -25,13 +25,13 @@ interface EventDao {
     suspend fun getEventByExternalId(externalId: String): Event?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertEvent(event: Event): Long
+    suspend fun insertEvent(event: Event): Long
 
     @Update
-    fun updateEvent(event: Event)
+    suspend fun updateEvent(event: Event)
 
     @Delete
-    fun deleteEvent(event: Event)
+    suspend fun deleteEvent(event: Event)
 
     // Category DAOs
     @Query("SELECT * FROM event_categories")

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.example.privatecalendar.R
 import com.example.privatecalendar.data.*
 import com.example.privatecalendar.utils.NotificationHelper
@@ -193,41 +194,39 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                 val adDayBefore = allDayNotificationDayBefore.value
                 val today = LocalDate.now()
 
-                withContext(Dispatchers.IO) {
-                    db.runInTransaction {
-                        for (i in 0 until jsonArray.length()) {
-                            try {
-                                val obj = jsonArray.getJSONObject(i)
-                                val eventDate = LocalDate.parse(obj.getString("date"))
-                                
-                                val event = Event(
-                                    title = EncryptedString(obj.getString("title")),
-                                    description = EncryptedString(obj.getString("description")),
-                                    location = if (obj.isNull("location")) null else EncryptedString(obj.getString("location")),
-                                    date = eventDate,
-                                    time = if (obj.isNull("time")) null else LocalTime.parse(obj.getString("time")),
-                                    isAllDay = obj.getBoolean("isAllDay"),
-                                    recurrence = RecurrenceType.valueOf(obj.optString("recurrence", "NONE")),
-                                    categoryId = if (obj.isNull("categoryId")) null else obj.getInt("categoryId"),
-                                    attachments = if (obj.isNull("attachments")) emptyList() else {
-                                        val arr = obj.getJSONArray("attachments")
-                                        val list = mutableListOf<String>()
-                                        for (j in 0 until arr.length()) list.add(arr.getString(j))
-                                        list
-                                    }
-                                )
-                                val id = eventDao.insertEvent(event)
-                                
-                                // Solo programar si no es un evento pasado
-                                if (!eventDate.isBefore(today)) {
-                                    NotificationHelper.scheduleNotification(
-                                        context, event.date, event.time, event.title.text, id.toInt(),
-                                        leadTime, event.isAllDay, adHour, adDayBefore, event.recurrence
-                                    )
+                db.withTransaction {
+                    for (i in 0 until jsonArray.length()) {
+                        try {
+                            val obj = jsonArray.getJSONObject(i)
+                            val eventDate = LocalDate.parse(obj.getString("date"))
+
+                            val event = Event(
+                                title = EncryptedString(obj.getString("title")),
+                                description = EncryptedString(obj.getString("description")),
+                                location = if (obj.isNull("location")) null else EncryptedString(obj.getString("location")),
+                                date = eventDate,
+                                time = if (obj.isNull("time")) null else LocalTime.parse(obj.getString("time")),
+                                isAllDay = obj.getBoolean("isAllDay"),
+                                recurrence = RecurrenceType.valueOf(obj.optString("recurrence", "NONE")),
+                                categoryId = if (obj.isNull("categoryId")) null else obj.getInt("categoryId"),
+                                attachments = if (obj.isNull("attachments")) emptyList() else {
+                                    val arr = obj.getJSONArray("attachments")
+                                    val list = mutableListOf<String>()
+                                    for (j in 0 until arr.length()) list.add(arr.getString(j))
+                                    list
                                 }
-                            } catch (_: Exception) {
-                                // Error individual no detiene el proceso
+                            )
+                            val id = eventDao.insertEvent(event)
+
+                            // Solo programar si no es un evento pasado
+                            if (!eventDate.isBefore(today)) {
+                                NotificationHelper.scheduleNotification(
+                                    context, event.date, event.time, event.title.text, id.toInt(),
+                                    leadTime, event.isAllDay, adHour, adDayBefore, event.recurrence
+                                )
                             }
+                        } catch (_: Exception) {
+                            // Error individual no detiene el proceso
                         }
                     }
                 }
