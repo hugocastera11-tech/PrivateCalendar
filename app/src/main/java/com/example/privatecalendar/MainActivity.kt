@@ -75,13 +75,14 @@ class MainActivity : AppCompatActivity() {
             
             var isAuthenticated by remember { mutableStateOf(value = false) }
             var isAuthChecked by remember { mutableStateOf(value = false) }
+            var authAttempt by remember { mutableStateOf(value = 0) }
 
             val context = LocalContext.current
             val authTitle = stringResource(R.string.secure_access)
             val authSubtitle = stringResource(R.string.auth_subtitle)
             val authErrorMsg = stringResource(R.string.auth_required)
 
-            LaunchedEffect(Unit) {
+            LaunchedEffect(authAttempt) {
                 val settingsManager = SettingsManager(context)
                 val biometricEnabled = settingsManager.isBiometricEnabled.first()
                 
@@ -218,7 +219,7 @@ class MainActivity : AppCompatActivity() {
                                         Button(
                                             onClick = { 
                                                 isAuthChecked = false
-                                                // Esto disparará el LaunchedEffect de nuevo
+                                                authAttempt++
                                             }
                                         ) {
                                             Text(stringResource(android.R.string.ok)) // O un recurso de reintento si existe
