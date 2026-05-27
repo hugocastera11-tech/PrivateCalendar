@@ -99,7 +99,7 @@ fun CalendarScreen(
             try {
                 val initial = viewModel.defaultViewMode.value
                 if (initial == "LOADING") CalendarViewMode.MONTH else CalendarViewMode.valueOf(initial)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 CalendarViewMode.MONTH
             }
         )
@@ -269,7 +269,7 @@ fun CalendarScreen(
                         fabClicked = true
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         scope.launch {
-                            kotlinx.coroutines.delay(100)
+                            delay(100)
                             eventToEdit = null
                             showAddEditDialog = true 
                         }
@@ -531,7 +531,7 @@ fun CalendarScreen(
             LaunchedEffect(eventIdBeingDeleted) {
                 val event = allEvents.find { it.id == eventIdBeingDeleted }
                 if (event != null) {
-                    delay(500) // Animación
+                    delay(300) // Animación más ajustada
                     viewModel.deleteEvent(event)
                     NotificationHelper.cancelNotification(context, event.id)
                     updateWidget(context)

@@ -133,12 +133,12 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun deleteEvent(event: Event) = viewModelScope.launch { eventDao.deleteEvent(event) }
-    fun insertEvent(event: Event) = viewModelScope.launch { eventDao.insertEvent(event) }
+    suspend fun insertEvent(event: Event): Long = eventDao.insertEvent(event)
     fun updateEvent(event: Event) = viewModelScope.launch { eventDao.updateEvent(event) }
 
-    suspend fun insertCategory(category: EventCategory) = eventDao.insertCategory(category)
-    suspend fun updateCategory(category: EventCategory) = eventDao.updateCategory(category)
-    suspend fun deleteCategory(category: EventCategory) = eventDao.deleteCategory(category)
+    fun insertCategory(category: EventCategory) = viewModelScope.launch { eventDao.insertCategory(category) }
+    fun updateCategory(category: EventCategory) = viewModelScope.launch { eventDao.updateCategory(category) }
+    fun deleteCategory(category: EventCategory) = viewModelScope.launch { eventDao.deleteCategory(category) }
 
     fun exportData(context: Context, uri: Uri) {
         viewModelScope.launch {
@@ -163,7 +163,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                     it.write(jsonArray.toString(4).toByteArray())
                 }
                 Toast.makeText(context, context.getString(R.string.backup_exported), Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Toast.makeText(context, context.getString(R.string.export_error), Toast.LENGTH_SHORT).show()
             }
         }
@@ -225,8 +225,8 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                                         leadTime, event.isAllDay, adHour, adDayBefore, event.recurrence
                                     )
                                 }
-                            } catch (e: Exception) {
-                                android.util.Log.e("CalendarViewModel", "Error importing single event", e)
+                            } catch (_: Exception) {
+                                // Error individual no detiene el proceso
                             }
                         }
                     }
@@ -257,7 +257,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                     Toast.makeText(context, "No se encontraron eventos nuevos para importar", Toast.LENGTH_SHORT).show()
                 }
                 onComplete()
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
                 Toast.makeText(context, "Permiso denegado para acceder al calendario", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 android.util.Log.e("CalendarViewModel", "Error importing from Google Calendar", e)

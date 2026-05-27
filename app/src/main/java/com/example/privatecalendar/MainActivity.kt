@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     ) { _ -> }
 
     override fun attachBaseContext(newBase: Context) {
-        val prefs = newBase.getSharedPreferences("androidx.datastore.preferences.settings", Context.MODE_PRIVATE)
+        val prefs = newBase.getSharedPreferences("androidx.datastore.preferences.settings", MODE_PRIVATE)
         val language = prefs.getString("language_code", "es") ?: "es"
         val locale = Locale(language)
         Locale.setDefault(locale)
@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
             
             val appTheme = try {
                 com.example.privatecalendar.ui.theme.AppTheme.valueOf(themeName)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 com.example.privatecalendar.ui.theme.AppTheme.DEFAULT
             }
             
@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity() {
                     AnimatedContent(
                         targetState = isAuthenticated to isAuthChecked,
                         transitionSpec = {
-                            fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(200))
+                            fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                         },
                         label = "RootTransition"
                     ) { (auth, checked) ->
