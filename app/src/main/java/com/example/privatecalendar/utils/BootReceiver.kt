@@ -13,21 +13,25 @@ import kotlinx.coroutines.launch
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val scope = CoroutineScope(Dispatchers.IO)
-            scope.launch {
-                val db = AppDatabase.getDatabase(context)
-                val settings = SettingsManager(context)
-                
-                val events = db.eventDao().getAllEventsSync()
-                val lead = settings.notificationLeadTime.first()
-                val adHour = settings.allDayNotificationHour.first()
-                val adDayBefore = settings.allDayNotificationDayBefore.first()
+            val pendingResult = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val db = AppDatabase.getDatabase(context)
+                    val settings = SettingsManager(context)
 
-                events.forEach { event ->
-                    NotificationHelper.scheduleNotification(
-                        context, event.date, event.time, event.title.text, event.id,
-                        lead, event.isAllDay, adHour, adDayBefore, event.recurrence
-                    )
+                    val events = db.eventDao().getAllEventsSync()
+                    val lead = settings.notificationLeadTime.first()
+                    val adHour = settings.allDayNotificationHour.first()
+                    val adDayBefore = settings.allDayNotificationDayBefore.first()
+
+                    events.forEach { event ->
+                        NotificationHelper.scheduleNotification(
+                            context, event.date, event.time, event.title.text, event.id,
+                            lead, event.isAllDay, adHour, adDayBefore, event.recurrence
+                        )
+                    }
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }
