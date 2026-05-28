@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Event::class, QuickTask::class, EventCategory::class], version = 7, exportSchema = false)
+@Database(entities = [Event::class, QuickTask::class, EventCategory::class], version = 8, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
@@ -44,6 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "event_database",
                 )
                     .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .fallbackToDestructiveMigration(dropAllTables = true) // Asegurar limpieza si hay problemas de versión o restauración corrupta
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                     .enableMultiInstanceInvalidation()
                     .build()
