@@ -68,6 +68,8 @@
     <string name="notification_today">Today\'s event: %1$s</string>
     <string name="notification_tomorrow">Tomorrow\'s event: %1$s</string>
     <string name="notification_lead">Your event starts in %1$d min: %2$s</string>
+    <string name="notification_imminent">Your event starts soon (%1$d min): %2$s</string>
+    <string name="notification_now">Your event starts now: %1$s</string>
     <string name="language">Language</string>
     <string name="language_es">Spanish</string>
     <string name="language_en">English</string>

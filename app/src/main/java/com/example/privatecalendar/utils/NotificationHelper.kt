@@ -98,7 +98,12 @@ object NotificationHelper {
                 if (allDayDayBefore && !isToday) context.getString(R.string.notification_tomorrow, title)
                 else context.getString(R.string.notification_today, title)
             } else {
-                context.getString(R.string.notification_lead, leadTimeMinutes, title)
+                val diffMinutes = java.time.Duration.between(now, eventStartTime).toMinutes()
+                when {
+                    diffMinutes <= 0 -> context.getString(R.string.notification_now, title)
+                    diffMinutes < leadTimeMinutes -> context.getString(R.string.notification_imminent, diffMinutes.toInt(), title)
+                    else -> context.getString(R.string.notification_lead, leadTimeMinutes, title)
+                }
             }
             putExtra("description", description)
         }
