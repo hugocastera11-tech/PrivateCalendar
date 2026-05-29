@@ -413,6 +413,7 @@ fun CalendarScreen(
                                         date = displayedDate,
                                         events = eventsOnSelectedDate,
                                         holidays = holidaysOnSelectedDate,
+                                        allCategories = allCategories,
                                         onDateChange = { displayedDate = it; selectedDate = it },
                                         onEditEvent = { eventToEdit = it; showAddEditDialog = true },
                                         onDeleteEvent = { eventToDelete = it; showDeleteConfirmDialog = true },
@@ -639,6 +640,7 @@ fun DayView(
     date: LocalDate,
     events: List<Event>,
     holidays: List<Holiday>,
+    allCategories: List<EventCategory>,
     onDateChange: (LocalDate) -> Unit,
     onEditEvent: (Event) -> Unit,
     onDeleteEvent: (Event) -> Unit,
@@ -707,6 +709,9 @@ fun DayView(
                 } else {
                     events.sortedWith(compareBy({ !it.isAllDay }, { it.time })).forEach { event ->
                         val isDeleting = event.id == eventIdBeingDeleted
+                        val category = allCategories.find { it.id == event.categoryId }
+                        val categoryColor = category?.let { Color(it.color) } ?: MaterialTheme.colorScheme.primary
+
                         AnimatedVisibility(
                             visible = !isDeleting,
                             exit = slideOutHorizontally(
@@ -730,7 +735,7 @@ fun DayView(
                                             modifier = Modifier
                                                 .size(10.dp)
                                                 .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.primary)
+                                                .background(categoryColor)
                                         )
                                         Spacer(Modifier.width(12.dp))
                                         Text(
