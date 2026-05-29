@@ -148,8 +148,10 @@ object NotificationHelper {
                     true
                 }
                 if (canUseExact) {
-                    // Precisión al minuto exacto incluso en Doze.
-                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    // ALARM_CLOCK es el nivel más alto de prioridad posible. 
+                    // Asegura que la alarma se dispare exactamente cuando debe, incluso en Doze/App Standby.
+                    val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent)
+                    alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
                 } else {
                     alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
                 }
@@ -157,7 +159,7 @@ object NotificationHelper {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
             }
         } catch (_: SecurityException) {
-            // Fallback final por si acaso
+            // Fallback final
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         }
     }
