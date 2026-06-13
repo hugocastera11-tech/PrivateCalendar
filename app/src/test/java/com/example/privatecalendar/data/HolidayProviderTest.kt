@@ -57,4 +57,31 @@ class HolidayProviderTest {
         val memorialDay = holidays.find { it.name == "Memorial Day" }
         assertEquals(expectedMemorialDay, memorialDay?.date)
     }
+    @Test
+    fun testSpainIncludesFamilyObservances() {
+        val year = 2024
+        val holidays = HolidayProvider.getSpanishHolidays(year)
+
+        assertTrue(holidays.any { it.name.contains("Día del Padre") && it.date == LocalDate.of(year, Month.MARCH, 19) })
+        assertTrue(holidays.any { it.name == "Día de la Madre" && it.date == LocalDate.of(year, Month.MAY, 5) })
+    }
+
+    @Test
+    fun testSupportedLatinAmericanCountriesIncludeFathersDay() {
+        val year = 2024
+
+        assertTrue(HolidayProvider.getColombianHolidays(year).any { it.name == "Día del Padre" && it.date == LocalDate.of(year, Month.JUNE, 16) })
+        assertTrue(HolidayProvider.getNicaraguanHolidays(year).any { it.name == "Día del Padre" && it.date == LocalDate.of(year, Month.JUNE, 23) })
+        assertTrue(HolidayProvider.getSalvadoranHolidays(year).any { it.name == "Día del Padre" && it.date == LocalDate.of(year, Month.JUNE, 17) })
+    }
+
+    @Test
+    fun testEuropeanCountriesIncludeLocalFamilyDates() {
+        val year = 2024
+
+        assertTrue(HolidayProvider.getGermanHolidays(year).any { it.name == "Día del Padre" && it.date == LocalDate.of(year, Month.MAY, 9) })
+        assertTrue(HolidayProvider.getBritishHolidays(year).any { it.name == "Día de la Madre" && it.date == LocalDate.of(year, Month.MARCH, 10) })
+        assertTrue(HolidayProvider.getPortugueseHolidays(year).any { it.name == "Día del Padre" && it.date == LocalDate.of(year, Month.MARCH, 19) })
+    }
+
 }
