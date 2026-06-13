@@ -109,6 +109,10 @@ fun CalendarScreen(
     // Flag para evitar la animación inicial al cargar la app
     var isFirstLoad by remember { mutableStateOf(value = true) }
 
+    LaunchedEffect(displayedDate.year) {
+        viewModel.ensureHolidaysForYear(displayedDate.year)
+    }
+
     LaunchedEffect(defaultViewModeSetting) {
         if (defaultViewModeSetting == "LOADING") return@LaunchedEffect
         
@@ -437,6 +441,7 @@ fun CalendarScreen(
                                     )
                                     CalendarViewMode.YEAR -> YearView(
                                         displayedYear = displayedDate.year,
+                                        holidayDates = holidayDates,
                                         onMonthSelected = { month ->
                                             displayedDate = LocalDate.of(displayedDate.year, month, 1)
                                             viewMode = CalendarViewMode.MONTH
@@ -985,6 +990,7 @@ fun MonthView(
 @Composable
 fun YearView(
     displayedYear: Int,
+    holidayDates: Set<LocalDate>,
     onMonthSelected: (Int) -> Unit,
     onYearChange: (Int) -> Unit
 ) {
@@ -1032,6 +1038,7 @@ fun YearView(
                 ) {
                     items((1..12).toList()) { month ->
                         val isCurrentMonth = targetYear == currentYear && month == currentMonthValue
+                        val hasHolidays = holidayDates.any { it.year == targetYear && it.monthValue == month }
                         val monthName = Month.of(month).getDisplayName(TextStyle.FULL, Locale.getDefault())
                         val interactionSource = remember { MutableInteractionSource() }
                         val isPressed by interactionSource.collectIsPressedAsState()
@@ -1046,12 +1053,22 @@ fun YearView(
                             modifier = Modifier.aspectRatio(1.2f).scale(scale)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = monthName.replaceFirstChar { it.uppercase() },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isCurrentMonth) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = monthName.replaceFirstChar { it.uppercase() },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (isCurrentMonth) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (hasHolidays) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .background(MaterialTheme.colorScheme.error, CircleShape)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
