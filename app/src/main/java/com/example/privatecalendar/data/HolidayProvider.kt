@@ -178,20 +178,52 @@ object HolidayProvider {
     internal fun getSpanishHolidays(year: Int): List<Holiday> {
         val easterSunday = calculateEasterSunday(year)
         return listOf(
+            // Festivos nacionales y observancias comunes
             Holiday(LocalDate.of(year, Month.JANUARY, 1), "Año Nuevo"),
             Holiday(LocalDate.of(year, Month.JANUARY, 6), "Epifanía del Señor"),
+            Holiday(LocalDate.of(year, Month.FEBRUARY, 14), "Día de San Valentín"),
+            Holiday(easterSunday.minusDays(48), "Carnaval (Lunes)"),
+            Holiday(easterSunday.minusDays(47), "Carnaval (Martes)"),
+            Holiday(easterSunday.minusDays(46), "Miércoles de Ceniza"),
             Holiday(LocalDate.of(year, Month.MARCH, 19), "San José / Día del Padre"),
+            Holiday(easterSunday.minusDays(7), "Domingo de Ramos"),
             Holiday(easterSunday.minusDays(3), "Jueves Santo"),
             Holiday(easterSunday.minusDays(2), "Viernes Santo"),
             Holiday(easterSunday, "Domingo de Resurrección"),
+            Holiday(easterSunday.plusDays(1), "Lunes de Pascua"),
             Holiday(LocalDate.of(year, Month.MAY, 1), "Fiesta del Trabajo"),
             Holiday(nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 1), "Día de la Madre"),
+            Holiday(easterSunday.plusDays(60), "Corpus Christi"),
+            Holiday(LocalDate.of(year, Month.JUNE, 24), "San Juan"),
             Holiday(LocalDate.of(year, Month.AUGUST, 15), "Asunción de la Virgen"),
             Holiday(LocalDate.of(year, Month.OCTOBER, 12), "Fiesta Nacional de España"),
             Holiday(LocalDate.of(year, Month.NOVEMBER, 1), "Todos los Santos"),
             Holiday(LocalDate.of(year, Month.DECEMBER, 6), "Día de la Constitución"),
             Holiday(LocalDate.of(year, Month.DECEMBER, 8), "Inmaculada Concepción"),
-            Holiday(LocalDate.of(year, Month.DECEMBER, 25), "Natividad del Señor")
+            Holiday(LocalDate.of(year, Month.DECEMBER, 24), "Nochebuena"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 25), "Natividad del Señor"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 26), "San Esteban"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 31), "Nochevieja"),
+
+            // Festividades autonómicas habituales: se incluyen con la comunidad en el nombre
+            // porque la app selecciona país, no comunidad autónoma.
+            Holiday(LocalDate.of(year, Month.FEBRUARY, 28), "Día de Andalucía"),
+            Holiday(LocalDate.of(year, Month.MARCH, 1), "Día de las Illes Balears"),
+            Holiday(LocalDate.of(year, Month.APRIL, 23), "Día de Aragón / Castilla y León / Sant Jordi"),
+            Holiday(LocalDate.of(year, Month.MAY, 2), "Día de la Comunidad de Madrid"),
+            Holiday(LocalDate.of(year, Month.MAY, 17), "Día das Letras Galegas"),
+            Holiday(LocalDate.of(year, Month.MAY, 30), "Día de Canarias"),
+            Holiday(LocalDate.of(year, Month.MAY, 31), "Día de Castilla-La Mancha"),
+            Holiday(LocalDate.of(year, Month.JUNE, 9), "Día de La Rioja / Región de Murcia"),
+            Holiday(LocalDate.of(year, Month.JULY, 25), "Santiago Apóstol / Día de Galicia"),
+            Holiday(LocalDate.of(year, Month.JULY, 28), "Día de las Instituciones de Cantabria"),
+            Holiday(LocalDate.of(year, Month.AUGUST, 5), "Nuestra Señora de África (Ceuta)"),
+            Holiday(LocalDate.of(year, Month.SEPTEMBER, 2), "Día de Ceuta"),
+            Holiday(LocalDate.of(year, Month.SEPTEMBER, 8), "Día de Asturias / Extremadura"),
+            Holiday(LocalDate.of(year, Month.SEPTEMBER, 11), "Diada Nacional de Catalunya"),
+            Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "La Bien Aparecida (Cantabria)"),
+            Holiday(LocalDate.of(year, Month.SEPTEMBER, 17), "Día de Melilla"),
+            Holiday(LocalDate.of(year, Month.OCTOBER, 9), "Día de la Comunitat Valenciana")
         )
     }
 

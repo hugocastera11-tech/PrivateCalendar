@@ -97,4 +97,19 @@ class HolidayProviderTest {
         assertTrue(HolidayProvider.getCanadianHolidays(year).any { it.name == "Christmas Day" && it.date == LocalDate.of(year, Month.DECEMBER, 25) })
     }
 
+    @Test
+    fun testSpanishHolidaysIncludeCommonAndRegionalFestivities() {
+        val year = 2024
+        val holidays = HolidayProvider.getSpanishHolidays(year)
+
+        assertTrue(holidays.any { it.name == "Lunes de Pascua" && it.date == LocalDate.of(year, Month.APRIL, 1) })
+        assertTrue(holidays.any { it.name == "Corpus Christi" && it.date == LocalDate.of(year, Month.MAY, 30) })
+        assertTrue(holidays.any { it.name == "Día de Andalucía" && it.date == LocalDate.of(year, Month.FEBRUARY, 28) })
+        assertTrue(holidays.any { it.name == "Día de la Comunidad de Madrid" && it.date == LocalDate.of(year, Month.MAY, 2) })
+        assertTrue(holidays.any { it.name == "Diada Nacional de Catalunya" && it.date == LocalDate.of(year, Month.SEPTEMBER, 11) })
+        assertTrue(holidays.any { it.name == "Día de la Comunitat Valenciana" && it.date == LocalDate.of(year, Month.OCTOBER, 9) })
+        assertTrue(holidays.any { it.name == "Nochebuena" && it.date == LocalDate.of(year, Month.DECEMBER, 24) })
+        assertTrue(holidays.any { it.name == "San Esteban" && it.date == LocalDate.of(year, Month.DECEMBER, 26) })
+    }
+
 }
