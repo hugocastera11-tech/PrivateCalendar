@@ -261,27 +261,24 @@ object HolidayProvider {
         )
     }
 
-    internal fun getColombianHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(
+    internal fun getColombianHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(
         Holiday(LocalDate.of(year, Month.JULY, 20), "Día de la Independencia"),
         Holiday(LocalDate.of(year, Month.AUGUST, 7), "Batalla de Boyacá"),
         Holiday(LocalDate.of(year, Month.DECEMBER, 7), "Día de las Velitas")
     )
 
-    internal fun getChileanHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(
+    internal fun getChileanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(
         Holiday(LocalDate.of(year, Month.SEPTEMBER, 18), "Fiestas Patrias"),
         Holiday(LocalDate.of(year, Month.SEPTEMBER, 19), "Día de las Glorias del Ejército")
     )
 
-    internal fun getPeruvianHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(
+    internal fun getPeruvianHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(
         Holiday(LocalDate.of(year, Month.JULY, 28), "Fiestas Patrias"),
         Holiday(LocalDate.of(year, Month.JULY, 29), "Fiestas Patrias")
     )
 
     internal fun getBrazilianHolidays(year: Int): List<Holiday> {
-        val easterSunday = calculateEasterSunday(year)
-        return commonFamilyHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2)) + listOf(
-            Holiday(easterSunday.minusDays(48), "Carnaval"),
-            Holiday(easterSunday.minusDays(47), "Carnaval"),
+        return commonBrazilianHolidays(year) + listOf(
             Holiday(LocalDate.of(year, Month.APRIL, 21), "Tiradentes"),
             Holiday(LocalDate.of(year, Month.SEPTEMBER, 7), "Independência do Brasil"),
             Holiday(LocalDate.of(year, Month.OCTOBER, 12), "Nossa Senhora Aparecida"),
@@ -290,27 +287,90 @@ object HolidayProvider {
         )
     }
 
-    internal fun getVenezuelanHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.JULY, 5), "Día de la Independencia"))
-    internal fun getUruguayanHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.AUGUST, 25), "Declaratoria de la Independencia"))
-    internal fun getEcuadorianHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.AUGUST, 10), "Primer Grito de Independencia"))
-    internal fun getPanamanianHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.NOVEMBER, 3), "Separación de Panamá de Colombia"))
-    internal fun getCostaRicanHolidays(year: Int): List<Holiday> = commonLatinFamilyHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
-    internal fun getDominicanHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = lastWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY), fathersDay = lastWeekdayOfMonth(year, Month.JULY, DayOfWeek.SUNDAY)) + listOf(Holiday(LocalDate.of(year, Month.FEBRUARY, 27), "Día de la Independencia"))
-    internal fun getGuatemalanHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 10)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
-    internal fun getHonduranHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 10)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
-    internal fun getNicaraguanHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 30), fathersDay = LocalDate.of(year, Month.JUNE, 23)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
-    internal fun getSalvadoranHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 10), fathersDay = LocalDate.of(year, Month.JUNE, 17)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
-    internal fun getParaguayanHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, fathersDay = LocalDate.of(year, Month.JUNE, 16)) + listOf(Holiday(LocalDate.of(year, Month.MAY, 14), "Día de la Independencia"), Holiday(LocalDate.of(year, Month.MAY, 15), "Día de la Madre"))
-    internal fun getBolivianHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 27), fathersDay = LocalDate.of(year, Month.MARCH, 19)) + listOf(Holiday(LocalDate.of(year, Month.AUGUST, 6), "Día de la Independencia"))
+    internal fun getVenezuelanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.JULY, 5), "Día de la Independencia"))
+    internal fun getUruguayanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.AUGUST, 25), "Declaratoria de la Independencia"))
+    internal fun getEcuadorianHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.AUGUST, 10), "Primer Grito de Independencia"))
+    internal fun getPanamanianHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.NOVEMBER, 3), "Separación de Panamá de Colombia"))
+    internal fun getCostaRicanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
+    internal fun getDominicanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, mothersDay = lastWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY), fathersDay = lastWeekdayOfMonth(year, Month.JULY, DayOfWeek.SUNDAY)) + listOf(Holiday(LocalDate.of(year, Month.FEBRUARY, 27), "Día de la Independencia"))
+    internal fun getGuatemalanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 10)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
+    internal fun getHonduranHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 10)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
+    internal fun getNicaraguanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 30), fathersDay = LocalDate.of(year, Month.JUNE, 23)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
+    internal fun getSalvadoranHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 10), fathersDay = LocalDate.of(year, Month.JUNE, 17)) + listOf(Holiday(LocalDate.of(year, Month.SEPTEMBER, 15), "Día de la Independencia"))
+    internal fun getParaguayanHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, fathersDay = LocalDate.of(year, Month.JUNE, 16)) + listOf(Holiday(LocalDate.of(year, Month.MAY, 14), "Día de la Independencia"), Holiday(LocalDate.of(year, Month.MAY, 15), "Día de la Madre"))
+    internal fun getBolivianHolidays(year: Int): List<Holiday> = commonLatinHolidays(year, mothersDay = LocalDate.of(year, Month.MAY, 27), fathersDay = LocalDate.of(year, Month.MARCH, 19)) + listOf(Holiday(LocalDate.of(year, Month.AUGUST, 6), "Día de la Independencia"))
 
-    internal fun getFrenchHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = lastWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY)) + listOf(Holiday(LocalDate.of(year, Month.JULY, 14), "Fête nationale"))
-    internal fun getGermanHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2), fathersDay = calculateEasterSunday(year).plusDays(39)) + listOf(Holiday(LocalDate.of(year, Month.OCTOBER, 3), "Tag der Deutschen Einheit"))
-    internal fun getItalianHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2), fathersDay = LocalDate.of(year, Month.MARCH, 19)) + listOf(Holiday(LocalDate.of(year, Month.JUNE, 2), "Festa della Repubblica"))
-    internal fun getBritishHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = calculateEasterSunday(year).minusDays(21)) + listOf(Holiday(LocalDate.of(year, Month.NOVEMBER, 5), "Bonfire Night"))
-    internal fun getPortugueseHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 1), fathersDay = LocalDate.of(year, Month.MARCH, 19)) + listOf(Holiday(LocalDate.of(year, Month.JUNE, 10), "Dia de Portugal"))
-    internal fun getCanadianHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2)) + listOf(Holiday(LocalDate.of(year, Month.JULY, 1), "Canada Day"), Holiday(nthWeekdayOfMonth(year, Month.OCTOBER, DayOfWeek.MONDAY, 2), "Thanksgiving Day"))
+    internal fun getFrenchHolidays(year: Int): List<Holiday> = commonEuropeanHolidays(year, mothersDay = lastWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY)) + listOf(Holiday(LocalDate.of(year, Month.JULY, 14), "Fête nationale"))
+    internal fun getGermanHolidays(year: Int): List<Holiday> = commonEuropeanHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2), fathersDay = calculateEasterSunday(year).plusDays(39)) + listOf(Holiday(LocalDate.of(year, Month.OCTOBER, 3), "Tag der Deutschen Einheit"))
+    internal fun getItalianHolidays(year: Int): List<Holiday> = commonEuropeanHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2), fathersDay = LocalDate.of(year, Month.MARCH, 19)) + listOf(Holiday(LocalDate.of(year, Month.JUNE, 2), "Festa della Repubblica"))
+    internal fun getBritishHolidays(year: Int): List<Holiday> = commonEuropeanHolidays(year, mothersDay = calculateEasterSunday(year).minusDays(21)) + listOf(Holiday(LocalDate.of(year, Month.NOVEMBER, 5), "Bonfire Night"))
+    internal fun getPortugueseHolidays(year: Int): List<Holiday> = commonEuropeanHolidays(year, mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 1), fathersDay = LocalDate.of(year, Month.MARCH, 19)) + listOf(Holiday(LocalDate.of(year, Month.JUNE, 10), "Dia de Portugal"))
+    internal fun getCanadianHolidays(year: Int): List<Holiday> = commonNorthAmericanHolidays(year) + listOf(Holiday(LocalDate.of(year, Month.JULY, 1), "Canada Day"), Holiday(nthWeekdayOfMonth(year, Month.OCTOBER, DayOfWeek.MONDAY, 2), "Thanksgiving Day"))
 
-    private fun commonLatinFamilyHolidays(year: Int): List<Holiday> = commonFamilyHolidays(year)
+    private fun commonLatinHolidays(
+        year: Int,
+        mothersDay: LocalDate = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2),
+        fathersDay: LocalDate = nthWeekdayOfMonth(year, Month.JUNE, DayOfWeek.SUNDAY, 3)
+    ): List<Holiday> {
+        val easterSunday = calculateEasterSunday(year)
+        return commonFamilyHolidays(year, mothersDay, fathersDay) + listOf(
+            Holiday(LocalDate.of(year, Month.JANUARY, 1), "Año Nuevo"),
+            Holiday(easterSunday.minusDays(48), "Carnaval (Lunes)"),
+            Holiday(easterSunday.minusDays(47), "Carnaval (Martes)"),
+            Holiday(easterSunday.minusDays(3), "Jueves Santo"),
+            Holiday(easterSunday.minusDays(2), "Viernes Santo"),
+            Holiday(easterSunday, "Domingo de Resurrección"),
+            Holiday(LocalDate.of(year, Month.MAY, 1), "Día del Trabajo"),
+            Holiday(LocalDate.of(year, Month.NOVEMBER, 1), "Día de Todos los Santos"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 8), "Inmaculada Concepción"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 25), "Navidad")
+        )
+    }
+
+    private fun commonBrazilianHolidays(year: Int): List<Holiday> {
+        val easterSunday = calculateEasterSunday(year)
+        return commonFamilyHolidays(
+            year,
+            mothersDay = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2)
+        ) + listOf(
+            Holiday(LocalDate.of(year, Month.JANUARY, 1), "Confraternização Universal"),
+            Holiday(easterSunday.minusDays(48), "Carnaval"),
+            Holiday(easterSunday.minusDays(47), "Carnaval"),
+            Holiday(easterSunday.minusDays(2), "Sexta-feira Santa"),
+            Holiday(easterSunday, "Páscoa"),
+            Holiday(LocalDate.of(year, Month.MAY, 1), "Dia do Trabalhador"),
+            Holiday(LocalDate.of(year, Month.NOVEMBER, 2), "Finados"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 25), "Natal")
+        )
+    }
+
+    private fun commonEuropeanHolidays(
+        year: Int,
+        mothersDay: LocalDate = nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2),
+        fathersDay: LocalDate = nthWeekdayOfMonth(year, Month.JUNE, DayOfWeek.SUNDAY, 3)
+    ): List<Holiday> {
+        val easterSunday = calculateEasterSunday(year)
+        return commonFamilyHolidays(year, mothersDay, fathersDay) + listOf(
+            Holiday(LocalDate.of(year, Month.JANUARY, 1), "Año Nuevo"),
+            Holiday(easterSunday.minusDays(2), "Viernes Santo"),
+            Holiday(easterSunday, "Domingo de Resurrección"),
+            Holiday(easterSunday.plusDays(1), "Lunes de Pascua"),
+            Holiday(LocalDate.of(year, Month.MAY, 1), "Día del Trabajo"),
+            Holiday(LocalDate.of(year, Month.NOVEMBER, 1), "Todos los Santos"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 25), "Navidad"),
+            Holiday(LocalDate.of(year, Month.DECEMBER, 26), "San Esteban / Boxing Day")
+        )
+    }
+
+    private fun commonNorthAmericanHolidays(year: Int): List<Holiday> = listOf(
+        Holiday(LocalDate.of(year, Month.JANUARY, 1), "New Year's Day"),
+        Holiday(nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 2), "Mother's Day"),
+        Holiday(nthWeekdayOfMonth(year, Month.JUNE, DayOfWeek.SUNDAY, 3), "Father's Day"),
+        Holiday(LocalDate.of(year, Month.OCTOBER, 31), "Halloween"),
+        Holiday(LocalDate.of(year, Month.DECEMBER, 24), "Christmas Eve"),
+        Holiday(LocalDate.of(year, Month.DECEMBER, 25), "Christmas Day"),
+        Holiday(LocalDate.of(year, Month.DECEMBER, 31), "New Year's Eve")
+    )
 
     private fun commonFamilyHolidays(
         year: Int,

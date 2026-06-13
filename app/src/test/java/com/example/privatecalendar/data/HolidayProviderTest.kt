@@ -84,4 +84,17 @@ class HolidayProviderTest {
         assertTrue(HolidayProvider.getPortugueseHolidays(year).any { it.name == "Día del Padre" && it.date == LocalDate.of(year, Month.MARCH, 19) })
     }
 
+    @Test
+    fun testFallbackProvidersIncludeOfficialYearRoundHolidays() {
+        val year = 2024
+
+        assertTrue(HolidayProvider.getColombianHolidays(year).any { it.name == "Año Nuevo" && it.date == LocalDate.of(year, Month.JANUARY, 1) })
+        assertTrue(HolidayProvider.getColombianHolidays(year).any { it.name == "Viernes Santo" && it.date == LocalDate.of(year, Month.MARCH, 29) })
+        assertTrue(HolidayProvider.getColombianHolidays(year).any { it.name == "Navidad" && it.date == LocalDate.of(year, Month.DECEMBER, 25) })
+        assertTrue(HolidayProvider.getBrazilianHolidays(year).any { it.name == "Confraternização Universal" && it.date == LocalDate.of(year, Month.JANUARY, 1) })
+        assertTrue(HolidayProvider.getBrazilianHolidays(year).any { it.name == "Sexta-feira Santa" && it.date == LocalDate.of(year, Month.MARCH, 29) })
+        assertTrue(HolidayProvider.getFrenchHolidays(year).any { it.name == "Lunes de Pascua" && it.date == LocalDate.of(year, Month.APRIL, 1) })
+        assertTrue(HolidayProvider.getCanadianHolidays(year).any { it.name == "Christmas Day" && it.date == LocalDate.of(year, Month.DECEMBER, 25) })
+    }
+
 }
