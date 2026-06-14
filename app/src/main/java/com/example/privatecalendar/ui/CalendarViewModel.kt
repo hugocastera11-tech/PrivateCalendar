@@ -49,6 +49,8 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     // Holidays State
     private val _holidays = MutableStateFlow<List<Holiday>>(emptyList())
     val holidays: StateFlow<List<Holiday>> = _holidays.asStateFlow()
+    private val loadedHolidayYears = mutableSetOf<Int>()
+    private var loadedHolidayCountryCode: String? = null
 
     private val _isInitialLoading = MutableStateFlow(false)
     val isInitialLoading = _isInitialLoading.asStateFlow()
@@ -61,10 +63,10 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                 .collect { (code, show) ->
                     if (show) {
                         val currentYear = LocalDate.now().year
-                        val h1 = async(Dispatchers.IO) { HolidayProvider.getHolidaysForYear(getApplication(), currentYear, code) }
-                        val h2 = async(Dispatchers.IO) { HolidayProvider.getHolidaysForYear(getApplication(), currentYear + 1, code) }
-                        _holidays.value = (h1.await() + h2.await()).distinctBy { it.date to it.name }
+                        reloadHolidayYears(code, currentYear - 1, currentYear, currentYear + 1)
                     } else {
+                        loadedHolidayYears.clear()
+                        loadedHolidayCountryCode = null
                         _holidays.value = emptyList()
                     }
                 }
@@ -95,6 +97,44 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }
+    }
+
+
+    fun ensureHolidaysForYear(year: Int) {
+        if (!showHolidays.value) return
+        val code = holidayCountryCode.value
+        if (loadedHolidayCountryCode == code && loadedHolidayYears.contains(year)) return
+
+        viewModelScope.launch {
+            loadMissingHolidayYears(code, year)
+        }
+    }
+
+    private suspend fun reloadHolidayYears(code: String, vararg years: Int) {
+        loadedHolidayYears.clear()
+        loadedHolidayCountryCode = code
+        _holidays.value = emptyList()
+        loadMissingHolidayYears(code, *years)
+    }
+
+    private suspend fun loadMissingHolidayYears(code: String, vararg years: Int) = coroutineScope {
+        if (loadedHolidayCountryCode != code) {
+            loadedHolidayYears.clear()
+            loadedHolidayCountryCode = code
+            _holidays.value = emptyList()
+        }
+
+        val missingYears = years.distinct().filter { it !in loadedHolidayYears }
+        if (missingYears.isEmpty()) return@coroutineScope
+
+        val loaded = missingYears.map { year ->
+            async(Dispatchers.IO) { year to HolidayProvider.getHolidaysForYear(getApplication(), year, code) }
+        }.awaitAll()
+
+        loadedHolidayYears.addAll(loaded.map { it.first })
+        _holidays.value = (_holidays.value + loaded.flatMap { it.second })
+            .distinctBy { it.date to it.name }
+            .sortedBy { it.date }
     }
 
     fun setDarkMode(enabled: Boolean) = viewModelScope.launch { settingsManager.setDarkMode(enabled) }
