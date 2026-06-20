@@ -48,9 +48,15 @@ fun isEventOnDate(event: Event, date: LocalDate): Boolean {
         RecurrenceType.WEEKLY -> event.date.dayOfWeek == date.dayOfWeek
         RecurrenceType.MONTHLY -> {
             val originalDay = event.date.dayOfMonth
-            val isLastDayOfMonth = date.dayOfMonth == date.lengthOfMonth()
-            if (originalDay > date.lengthOfMonth()) {
-                isLastDayOfMonth
+            if (originalDay > 28) {
+                // Si el día original no existe en el mes actual (ej: 31 en Abril), 
+                // se muestra el último día del mes.
+                val lastDayOfTargetMonth = date.lengthOfMonth()
+                if (originalDay >= lastDayOfTargetMonth) {
+                    date.dayOfMonth == lastDayOfTargetMonth
+                } else {
+                    date.dayOfMonth == originalDay
+                }
             } else {
                 date.dayOfMonth == originalDay
             }
@@ -59,8 +65,13 @@ fun isEventOnDate(event: Event, date: LocalDate): Boolean {
             val originalDay = event.date.dayOfMonth
             val originalMonth = event.date.month
             if (date.month == originalMonth) {
-                if (originalDay > date.lengthOfMonth()) {
-                    date.dayOfMonth == date.lengthOfMonth()
+                if (originalDay > 28) {
+                    val lastDayOfTargetMonth = date.lengthOfMonth()
+                    if (originalDay >= lastDayOfTargetMonth) {
+                        date.dayOfMonth == lastDayOfTargetMonth
+                    } else {
+                        date.dayOfMonth == originalDay
+                    }
                 } else {
                     date.dayOfMonth == originalDay
                 }

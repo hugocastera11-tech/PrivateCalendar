@@ -42,7 +42,7 @@ class HolidayProviderTest {
         
         assertTrue(holidays.any { it.name == "Año Nuevo" && it.date == LocalDate.of(year, 1, 1) })
         assertTrue(holidays.any { it.name == "Fiesta Nacional de España" && it.date == LocalDate.of(year, 10, 12) })
-        assertTrue(holidays.any { it.name == "Natividad del Señor" && it.date == LocalDate.of(year, 12, 25) })
+        assertTrue(holidays.any { it.name.contains("Navidad") && it.date == LocalDate.of(year, 12, 25) })
     }
 
     @Test
@@ -62,8 +62,18 @@ class HolidayProviderTest {
         val year = 2024
         val holidays = HolidayProvider.getSpanishHolidays(year)
 
-        assertTrue(holidays.any { it.name.contains("Día del Padre") && it.date == LocalDate.of(year, Month.MARCH, 19) })
+        assertTrue(holidays.any { it.name.contains("San José") && it.date == LocalDate.of(year, Month.MARCH, 19) })
         assertTrue(holidays.any { it.name == "Día de la Madre" && it.date == LocalDate.of(year, Month.MAY, 5) })
+    }
+
+    @Test
+    fun testSpainIncludesNewObservances() {
+        val year = 2024
+        val holidays = HolidayProvider.getSpanishHolidays(year)
+
+        assertTrue(holidays.any { it.name.contains("Sant Jordi") && it.date == LocalDate.of(year, Month.APRIL, 23) })
+        assertTrue(holidays.any { it.name.contains("Cambio de hora") && it.date == LocalDate.of(year, Month.MARCH, 31) })
+        assertTrue(holidays.any { it.name.contains("Cambio de hora") && it.date == LocalDate.of(year, Month.OCTOBER, 27) })
     }
 
     @Test
@@ -108,7 +118,6 @@ class HolidayProviderTest {
         assertTrue(holidays.any { it.name == "Día de la Comunidad de Madrid" && it.date == LocalDate.of(year, Month.MAY, 2) })
         assertTrue(holidays.any { it.name == "Diada Nacional de Catalunya" && it.date == LocalDate.of(year, Month.SEPTEMBER, 11) })
         assertTrue(holidays.any { it.name == "Día de la Comunitat Valenciana" && it.date == LocalDate.of(year, Month.OCTOBER, 9) })
-        assertTrue(holidays.any { it.name == "Nochebuena" && it.date == LocalDate.of(year, Month.DECEMBER, 24) })
         assertTrue(holidays.any { it.name == "San Esteban" && it.date == LocalDate.of(year, Month.DECEMBER, 26) })
     }
 
