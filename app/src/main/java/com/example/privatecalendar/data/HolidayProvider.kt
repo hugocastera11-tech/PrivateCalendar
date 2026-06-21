@@ -186,10 +186,28 @@ object HolidayProvider {
                 continue
             }
             
-            // Si hay varios, filtrar duplicados inteligentes
+            // Si hay varios en la misma fecha, aplicamos una deduplicación radical
             val uniqueForDay = mutableListOf<Holiday>()
-            for (h in holidaysOnDate.sortedByDescending { it.name.length }) { // Preferir nombres más largos/descriptivos
-                if (uniqueForDay.none { isSimilar(it.name, h.name) }) {
+            
+            // Ordenar por longitud descendente para que el nombre más completo sea el "maestro"
+            val sortedHolidays = holidaysOnDate.sortedByDescending { it.name.length }
+            
+            for (h in sortedHolidays) {
+                val normalizedCurrent = normalizeForComparison(h.name)
+                
+                // Si este festivo ya está representado por uno más completo o similar, lo ignoramos
+                val isAlreadyRepresented = uniqueForDay.any { existing ->
+                    val normalizedExisting = normalizeForComparison(existing.name)
+                    // Un festivo es duplicado si:
+                    // - El nombre normalizado es igual
+                    // - Uno contiene al otro (ej: "Navidad" contenido en "Natividad del Señor")
+                    // - Coinciden en palabras clave después de quitar conectores
+                    normalizedExisting.contains(normalizedCurrent) || 
+                    normalizedCurrent.contains(normalizedExisting) ||
+                    shareSignificantWords(normalizedExisting, normalizedCurrent)
+                }
+                
+                if (!isAlreadyRepresented) {
                     uniqueForDay.add(h)
                 }
             }
@@ -199,45 +217,50 @@ object HolidayProvider {
         return result.sortedBy { it.date }
     }
 
-    private fun isSimilar(name1: String, name2: String): Boolean {
-        val n1 = normalize(name1)
-        val n2 = normalize(name2)
-        
-        if (n1 == n2) return true
-        if (n1.contains(n2) || n2.contains(n1)) return true
-        
-        // Sinónimos comunes
-        val synonyms = listOf(
-            setOf("hispanidad", "fiesta nacional de espana", "dia de la fiesta nacional de espana", "fiesta nacional"),
-            setOf("constitucion", "dia de la constitucion", "dia de la constitucion espanola"),
-            setOf("inmaculada concepcion", "la inmaculada concepcion"),
-            setOf("reyes", "epifania", "dia de reyes", "epifania del senor"),
-            setOf("trabajo", "trabajador", "dia del trabajo", "dia del trabajador", "fiesta del trabajo"),
-            setOf("navidad", "natividad del senor", "dia de navidad"),
-            setOf("ano nuevo", "confraternizacao universal"),
-            setOf("viernes santo", "good friday"),
-            setOf("jueves santo", "maundy thursday"),
-            setOf("domingo de resurreccion", "easter sunday", "pascua"),
-            setOf("lunes de pascua", "easter monday"),
-            setOf("todos los santos", "all saints day")
-        )
-        
-        for (s in synonyms) {
-            if (s.any { n1.contains(it) } && s.any { n2.contains(it) }) return true
-        }
-        
-        return false
+    private fun normalizeForComparison(name: String): String {
+        return name.lowercase()
+            .replace(Regex("[áàä]"), "a")
+            .replace(Regex("[éèë]"), "e")
+            .replace(Regex("[íìï]"), "i")
+            .replace(Regex("[óòö]"), "o")
+            .replace(Regex("[úùü]"), "u")
+            .replace("ñ", "n")
+            .replace("ç", "s")
+            .replace(Regex("[^a-z0-9 ]"), " ") // Quitar puntuación
+            .replace(Regex("\\s+"), " ")      // Colapsar espacios
+            .trim()
     }
 
-    private fun normalize(name: String): String {
-        return name.lowercase()
-            .replace("á", "a")
-            .replace("é", "e")
-            .replace("í", "i")
-            .replace("ó", "o")
-            .replace("ú", "u")
-            .replace("ñ", "n")
-            .trim()
+    private fun shareSignificantWords(name1: String, name2: String): Boolean {
+        val ignoreWords = setOf("de", "la", "el", "del", "y", "en", "festividad", "dia", "festa", "la", "les", "els")
+        val words1 = name1.split(" ").filter { it.length > 2 && it !in ignoreWords }.toSet()
+        val words2 = name2.split(" ").filter { it.length > 2 && it !in ignoreWords }.toSet()
+        
+        if (words1.isEmpty() || words2.isEmpty()) return false
+        
+        // Si comparten palabras clave importantes (ej: "Juan", "Joan"), son lo mismo en este contexto
+        val intersection = words1.intersect(words2)
+        
+        // Casos especiales de traducción directa que no comparten raíz
+        val directTranslations = mapOf(
+            "juan" to "joan",
+            "jose" to "josep",
+            "esteban" to "esteve",
+            "pascua" to "pasqua",
+            "viernes" to "divendres",
+            "jueves" to "dijous",
+            "lunes" to "dilluns",
+            "reyes" to "reis",
+            "todos" to "tots"
+        )
+        
+        val hasDirectTranslation = words1.any { w1 -> 
+            words2.any { w2 -> 
+                directTranslations[w1] == w2 || directTranslations[w2] == w1 
+            }
+        }
+
+        return intersection.isNotEmpty() || hasDirectTranslation
     }
 
     private fun getCommonObservances(year: Int, countryCode: String): List<Holiday> {
@@ -276,7 +299,7 @@ object HolidayProvider {
             
             // Festivos comunes (Suelen ser no laborables en casi todas las CCAA)
             Holiday(easterSunday.minusDays(3), "Jueves Santo"),
-            Holiday(LocalDate.of(year, Month.MARCH, 19), "San José"),
+            Holiday(LocalDate.of(year, Month.MARCH, 19), "San José / Día del Padre"),
             Holiday(easterSunday.plusDays(1), "Lunes de Pascua"),
             Holiday(LocalDate.of(year, Month.JULY, 25), "Santiago Apóstol"),
             Holiday(LocalDate.of(year, Month.DECEMBER, 26), "San Esteban"),
@@ -286,7 +309,6 @@ object HolidayProvider {
             Holiday(easterSunday.minusDays(7), "Domingo de Ramos"),
             Holiday(easterSunday, "Domingo de Resurrección"),
             Holiday(nthWeekdayOfMonth(year, Month.MAY, DayOfWeek.SUNDAY, 1), "Día de la Madre"),
-            Holiday(LocalDate.of(year, Month.MARCH, 19), "Día del Padre"),
             Holiday(LocalDate.of(year, Month.APRIL, 23), "Sant Jordi / Día del Libro"),
             Holiday(LocalDate.of(year, Month.JUNE, 23), "Víspera de San Juan"),
             Holiday(LocalDate.of(year, Month.JUNE, 24), "San Juan"),
@@ -312,12 +334,8 @@ object HolidayProvider {
             Holiday(LocalDate.of(year, Month.SEPTEMBER, 17), "Día de Melilla"),
             Holiday(LocalDate.of(year, Month.OCTOBER, 9), "Día de la Comunitat Valenciana")
         )
-
-        // Manejo de traslados (Ej: Si el 12 de Octubre es domingo, se suele pasar al lunes en algunas CCAA)
-        // Pero para simplificar y coincidir con Google Calendar "General Spain", mantenemos el día original
-        // y Google suele marcarlo como "Fiesta Nacional (observado)" si se traslada.
         
-        return holidays.distinctBy { it.date to it.name }.sortedBy { it.date }
+        return holidays.sortedBy { it.date }
     }
 
     internal fun getMexicanHolidays(year: Int): List<Holiday> {
